@@ -31,26 +31,55 @@ async function waitForMessageBox(timeout = 10000) {
 }
 
 // Helper function to convert base64 to File and inject into input
+
 function sendAttachment(base64, filename, mime) {
+
   const byteString = atob(base64.split(',')[1]);
+
   const arrayBuffer = new ArrayBuffer(byteString.length);
+
   const uint8Array = new Uint8Array(arrayBuffer);
+
   for (let i = 0; i < byteString.length; i++) {
+
     uint8Array[i] = byteString.charCodeAt(i);
+
   }
+
   const file = new File([uint8Array], filename, { type: mime });
 
-  // Find the hidden file input element
-  // This selector might need adjustment based on WhatsApp Web's current DOM
-  const fileInput = document.querySelector('input[type="file"]'); 
+
+
+  // Find the hidden file input element, prioritizing image-specific ones
+
+  const fileInput =
+
+    document.querySelector('input[type="file"][accept^="image"]') ||
+
+    document.querySelector('input[type="file"][accept*="image"]') ||
+
+    document.querySelector('input[type="file"]');
+
+
+
   if (!fileInput) {
+
     throw new Error("File input element not found for attachment.");
+
   }
 
+  console.log("Injected file input accept attribute:", fileInput.accept); // Added verification log
+
+
+
   const dataTransfer = new DataTransfer();
+
   dataTransfer.items.add(file);
+
   fileInput.files = dataTransfer.files;
+
   fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -110,7 +139,8 @@ async function sendMessage(messageText, attachment) { // Renamed and adapted
 
         let attachmentTypeButtonSelector;
         if (attachment.fileType === 'image') {
-          attachmentTypeButtonSelector = 'span[data-icon="media-filled-refreshed"]'; // Photos & Videos
+          attachmentTypeButtonSelector =
+            'div[aria-label="Photos & Videos"], div[aria-label="Gallery"], span[data-icon="attach-image"], input[accept*="image"]';
         } else if (attachment.fileType === 'document') {
           attachmentTypeButtonSelector = 'span[data-icon="document-filled-refreshed"]'; // Document
         } else {
@@ -118,8 +148,13 @@ async function sendMessage(messageText, attachment) { // Renamed and adapted
         }
 
         // 2. Find and click the specific attachment type button
-        const attachmentTypeButton = await waitForElement(attachmentTypeButtonSelector, 10000);
-        if (!attachmentTypeButton) throw new Error(`${attachment.fileType} attachment type button not found.`);
+        let attachmentTypeButton = await waitForElement(attachmentTypeButtonSelector, 10000);
+        if (!attachmentTypeButton) {
+          console.warn("Media button not found, trying document fallback.");
+          attachmentTypeButtonSelector = 'span[data-icon="document-filled-refreshed"]'; // Fallback to document
+          attachmentTypeButton = await waitForElement(attachmentTypeButtonSelector, 10000); // Try again
+          if (!attachmentTypeButton) throw new Error(`${attachment.fileType} attachment type button not found, even with fallback.`);
+        }
         attachmentTypeButton.click();
         await delay(1000); // Wait for file input to be ready
 
