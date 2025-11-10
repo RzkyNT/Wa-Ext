@@ -95,6 +95,7 @@ async function startSendingProcess(messages, attachment) {
           totalMessages: totalMessagesToSend,
           isSendingActive: isSendingActive
         }).catch(() => {}); // Catch error if popup is closed
+        await sendMessageToContentScript(tab.id, { action: "hideOverlay" }); // Hide overlay on cancellation
         return;
       }
 
@@ -203,21 +204,56 @@ async function startSendingProcess(messages, attachment) {
 }
 
 function sendMessageToContentScript(tabId, message) {
-  return new Promise(async (resolve) => { // Made async to use await
+  return new Promise(async (resolve) => {
     try {
       // First, ensure the content script is injected.
-      // This will inject the script if it's not already present in the tab.
-      // It's safe to call multiple times; Chrome will only inject once per tab session.
       await chrome.scripting.executeScript({
         target: { tabId: tabId },
         files: ['content.js']
       });
       console.log(`Content script injected into tab ${tabId}.`);
 
-      // Now send the message
+      // --- New: Ping-pong mechanism to ensure content script is ready ---
+      const pingTimeout = 10000; // 10 seconds for ping-pong
+      const pingInterval = 500; // Try every 500ms
+      const pingStartTime = Date.now();
+      let contentScriptReady = false;
+
+      while (!contentScriptReady && (Date.now() - pingStartTime < pingTimeout)) {
+        try {
+          const pingResponse = await new Promise((resPing) => {
+            chrome.tabs.sendMessage(tabId, { action: "ping" }, (response) => {
+              if (chrome.runtime.lastError) {
+                // Ignore error if receiving end does not exist, it means script is not ready yet
+                resPing(null);
+              } else {
+                resPing(response);
+              }
+            });
+          });
+
+          if (pingResponse && pingResponse.status === "pong") {
+            contentScriptReady = true;
+            console.log(`Content script in tab ${tabId} is ready.`);
+            break;
+          }
+        } catch (e) {
+          // Ignore errors during ping, content script might not be fully initialized
+        }
+        await new Promise(r => setTimeout(r, pingInterval));
+      }
+
+      if (!contentScriptReady) {
+        console.error(`Content script in tab ${tabId} did not become ready within ${pingTimeout / 1000}s.`);
+        resolve({ status: "error", error: "Content script not ready." });
+        return;
+      }
+      // --- End of new ping-pong mechanism ---
+
+      // Now send the actual message
       chrome.tabs.sendMessage(tabId, message, (res) => {
         if (chrome.runtime.lastError) {
-          console.error("Message sending failed after injection:", chrome.runtime.lastError);
+          console.error("Message sending failed after ping-pong:", chrome.runtime.lastError);
           resolve({ status: "error", error: chrome.runtime.lastError.message });
         } else {
           resolve(res);

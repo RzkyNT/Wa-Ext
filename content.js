@@ -144,28 +144,18 @@ function waitForElement(selector, timeout = 20000) {
 async function waitForMessageBox(timeout = 20000) {
   const start = Date.now();
   while (Date.now() - start < timeout) {
-    // Ambil semua elemen yang bisa diketik
     const boxes = document.querySelectorAll('div[contenteditable="true"][role="textbox"]');
-
     for (const box of boxes) {
-      const placeholder = box.getAttribute('aria-placeholder') || '';
-      const tabindex = box.getAttribute('tabindex') || '';
-      
-      // ❌ Blacklist jika placeholder-nya mengandung "Tanya Meta AI" atau "Cari"
-      if (/meta ai|cari/i.test(placeholder) || tabindex === '3') {
-        continue;
+      const title = box.getAttribute('title') || '';
+      // If it doesn't have a title or the title doesn't contain "Search" or "Cari", it's likely the message box
+      if (!title.match(/search|cari/i)) {
+        return box;
       }
-
-      // ✅ Jika bukan search bar, maka ini message box yang benar
-      return box;
     }
-
     await new Promise(r => setTimeout(r, 300));
   }
-  throw new Error("Message box not found (filtered out search bar)");
-}
-    
-    /**
+  throw new Error("Message box not found (after filtering search inputs)");
+}    /**
  * Tunggu sampai WhatsApp benar-benar siap (logo WhatsApp muncul)
  * agar tidak tergantung delay waktu.
  */
@@ -250,6 +240,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.action === "hideOverlay") {
     window.__waHideOverlay?.();
     sendResponse({ status: "overlay hidden" });
+  } else if (request.action === "ping") {
+    sendResponse({ status: "pong" });
   }
   return true;
 });
@@ -260,6 +252,14 @@ async function insertMessageText(messageBox, messageText) {
 
   messageBox.focus();
   await delay(500);
+
+  // --- New code for clearing existing text ---
+  console.log("insertMessageText: Clearing existing text in message box...");
+  messageBox.innerHTML = ''; // Clear contenteditable div
+  messageBox.innerText = ''; // Ensure text is also cleared
+  await delay(500); // Give some time for the text to clear
+  console.log("insertMessageText: Existing text cleared.");
+  // --- End of new code ---
 
   const lines = messageText.split('\n');
   const inputEvent = (text) => {
