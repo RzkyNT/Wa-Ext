@@ -7,6 +7,7 @@ let isSendingActive = false;
 let currentProgressIndex = 0;
 let totalMessagesToSend = 0;
 let currentStatusMessage = '';
+let sendingResults = { success: [], failed: [] }; // Global variable to store sending results
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("Background script received message:", request);
@@ -16,6 +17,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     currentProgressIndex = 0;
     totalMessagesToSend = request.messages.length;
     currentStatusMessage = 'Memulai pengiriman...';
+    sendingResults = { success: [], failed: [] }; // Clear results on new session
+    chrome.storage.local.set({ sendingResults }); // Save initial empty results
     startSendingProcess(request.messages, request.attachment);
     sendResponse({status: "started"});
   } else if (request.action === "cancelSending") {
@@ -39,6 +42,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       currentIndex: currentProgressIndex,
       totalMessages: totalMessagesToSend,
       status: currentStatusMessage
+    });
+    return true; // Keep the message channel open for async responses
+  } else if (request.action === "getSendingResults") {
+    chrome.storage.local.get(['sendingResults'], (result) => {
+      sendResponse(result.sendingResults || { success: [], failed: [] });
+    });
+    return true; // Keep the message channel open for async responses
+  } else if (request.action === "clearSendingResults") {
+    sendingResults = { success: [], failed: [] };
+    chrome.storage.local.set({ sendingResults }, () => {
+      sendResponse({ status: "cleared" });
     });
     return true; // Keep the message channel open for async responses
   }
@@ -127,6 +141,8 @@ async function startSendingProcess(messages, attachment) {
       if (!sentMessage || sentMessage.status !== "ok") {
         const errorMessage = sentMessage.error || "Unknown error";
         console.warn(`Failed to send message to ${currentNumber}: ${errorMessage}`);
+        sendingResults.failed.push({ number: currentNumber, message: message.message, error: errorMessage });
+        chrome.storage.local.set({ sendingResults }); // Save updated results
         showNotification("Peringatan", `Gagal mengirim ke ${currentNumber}: ${errorMessage}`);
         currentStatusMessage = `Gagal mengirim ke ${currentNumber}: ${errorMessage}`;
         chrome.runtime.sendMessage({
@@ -137,6 +153,8 @@ async function startSendingProcess(messages, attachment) {
           isSendingActive: isSendingActive
         }).catch(() => {}); // Catch error if popup is closed
       } else {
+        sendingResults.success.push({ number: currentNumber, message: message.message });
+        chrome.storage.local.set({ sendingResults }); // Save updated results
         showNotification("Sukses", `Pesan terkirim ke ${currentNumber}`);
         currentStatusMessage = `Terkirim ke ${currentNumber}`;
         chrome.runtime.sendMessage({

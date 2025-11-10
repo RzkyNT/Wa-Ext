@@ -1,123 +1,176 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>WA Sender Free</title>
+  <title>WA Sender By RzkyNT</title>
   <style>
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font stack */
       width: 350px;
-      padding: 15px;
-      background-color: #f0f2f5; /* Light gray background */
-      color: #111b21; /* Dark text */
+      padding: 20px; /* Increased padding */
+      background-color: #e9ebee; /* Lighter, modern background */
+      color: #333; /* Darker, more readable text */
+      line-height: 1.6;
     }
     h1 {
-      font-size: 20px;
+      font-size: 24px; /* Slightly larger */
       margin-top: 0;
-      color: #005c4b; /* WhatsApp green */
+      color: #128C7E; /* WhatsApp brand green */
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 25px; /* Increased margin */
+      font-weight: 500; /* Medium weight */
     }
     .section {
-      margin-bottom: 15px;
+      margin-bottom: 20px; /* Increased margin */
       background-color: #ffffff;
-      padding: 10px;
-      border-radius: 8px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      padding: 15px; /* Increased padding */
+      border-radius: 10px; /* More rounded corners */
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* More prominent shadow */
     }
     .section-title {
-      font-weight: bold;
-      margin-bottom: 8px;
-      color: #005c4b;
-      font-size: 15px;
+      font-weight: 600; /* Bolder */
+      margin-bottom: 10px;
+      color: #075E54; /* Darker WhatsApp green */
+      font-size: 16px;
+      border-bottom: 1px solid #eee; /* Subtle separator */
+      padding-bottom: 8px;
     }
     .mode-container {
-      border: 1px solid #e0e0e0;
-      padding: 10px;
-      border-radius: 8px;
-      background-color: #fcfcfc;
+      border: 1px solid #ddd; /* Lighter border */
+      padding: 15px;
+      border-radius: 10px;
+      background-color: #fdfdfd;
     }
     .hidden {
       display: none;
     }
-    input[type="text"], input[type="file"] {
-      width: calc(100% - 10px); /* Account for padding */
-      padding: 8px;
-      margin-top: 5px;
-      border: 1px solid #e0e0e0;
+    input[type="text"], input[type="file"], textarea {
+      width: 100%; /* Full width */
+      padding: 10px; /* Increased padding */
+      margin-top: 8px; /* Increased margin */
+      border: 1px solid #ccc; /* Lighter border */
       border-radius: 5px;
       box-sizing: border-box;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    textarea {
-      width: 100%; /* Set to 100% and let box-sizing handle padding */
-      padding: 8px;
-      margin-top: 5px;
-      border: 1px solid #e0e0e0;
-      border-radius: 5px;
-      box-sizing: border-box;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      resize: vertical; /* Allow vertical resizing */
-    }
-    input[type="radio"] {
-      margin-right: 5px;
-    }
-    label {
-      margin-right: 15px;
+      font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       font-size: 14px;
     }
+    textarea {
+      resize: vertical;
+      min-height: 60px; /* Minimum height for textareas */
+    }
+    input[type="radio"] {
+      margin-right: 8px; /* Increased margin */
+      transform: scale(1.1); /* Slightly larger radio buttons */
+    }
+    label {
+      margin-right: 20px; /* Increased margin */
+      font-size: 14px;
+      color: #555;
+    }
     button {
-      background-color: #008069; /* WhatsApp dark green */
+      background-color: #25D366; /* WhatsApp bright green */
       color: white;
-      padding: 10px 15px;
+      padding: 12px 15px; /* Increased padding */
       border: none;
       border-radius: 5px;
       cursor: pointer;
       font-size: 16px;
       width: 100%;
-      margin-top: 15px;
-      transition: background-color 0.2s;
+      margin-top: 18px; /* Increased margin */
+      transition: background-color 0.2s ease, transform 0.1s ease; /* Smooth transitions */
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
     button:hover {
-      background-color: #006a5e;
+      background-color: #1DA851; /* Darker green on hover */
+      transform: translateY(-1px); /* Slight lift effect */
+    }
+    button:active {
+      transform: translateY(0);
     }
     button#cancel-sending {
-      background-color: #dc3545; /* Red for cancel */
+      background-color: #DC3545; /* Red for cancel */
       margin-top: 10px;
     }
     button#cancel-sending:hover {
-      background-color: #c82333;
+      background-color: #C82333;
+    }
+    button#clear-results {
+      background-color: #6c757d; /* Gray for clear */
+      margin-top: 15px;
+    }
+    button#clear-results:hover {
+      background-color: #5a6268;
     }
     #progress-container {
-      margin-top: 20px;
-      padding: 10px;
-      background-color: #e7ffdb; /* Light green for progress */
-      border: 1px solid #a4d492;
-      border-radius: 8px;
+      margin-top: 25px; /* Increased margin */
+      padding: 15px;
+      background-color: #e6ffed; /* Lighter green for progress */
+      border: 1px solid #a3e6b8;
+      border-radius: 10px;
       font-size: 14px;
-      color: #005c4b;
+      color: #075E54;
     }
     #progress-text {
       font-weight: bold;
-      margin-bottom: 5px;
+      margin-bottom: 8px;
+      color: #075E54;
     }
     #progress-bar-container {
       width: 100%;
       background-color: #e0e0e0;
       border-radius: 5px;
-      height: 10px;
+      height: 12px; /* Slightly taller */
       overflow: hidden;
     }
     #progress-bar {
       height: 100%;
       width: 0%;
-      background-color: #25d366; /* WhatsApp bright green */
+      background-color: #25D366; /* WhatsApp bright green */
       border-radius: 5px;
       transition: width 0.3s ease-in-out;
+    }
+    #current-status {
+      margin-top: 10px;
+      font-style: italic;
+      color: #555;
+    }
+    #results-container {
+      margin-top: 25px;
+      padding: 15px;
+      background-color: #f8f9fa; /* Light background for results */
+      border: 1px solid #dee2e6;
+      border-radius: 10px;
+    }
+    #successful-messages ul, #failed-messages ul {
+      list-style-type: none; /* Remove bullet points */
+      padding-left: 0;
+      margin-top: 5px;
+      max-height: 150px; /* Limit height for scroll */
+      overflow-y: auto; /* Scroll if too many items */
+      border: 1px solid #eee;
+      border-radius: 5px;
+      padding: 8px;
+      background-color: #fff;
+    }
+    #successful-messages li {
+      color: #28a745; /* Green for success */
+      margin-bottom: 3px;
+    }
+    #failed-messages li {
+      color: #dc3545; /* Red for failure */
+      margin-bottom: 3px;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 30px; /* Increased margin */
+      font-size: 12px;
+      color: #888;
+      border-top: 1px solid #eee;
+      padding-top: 15px;
     }
   </style>
 </head>
 <body>
-  <h1>WA Sender Free</h1>
+  <h1>WA Sender by RzkyNT</h1>
 
   <div class="section">
     <div class="section-title">Mode Pengiriman</div>
@@ -176,6 +229,23 @@
       <div id="progress-bar"></div>
     </div>
     <div id="current-status"></div>
+  </div>
+
+  <div id="results-container" class="section hidden">
+    <div class="section-title">Hasil Pengiriman</div>
+    <div id="successful-messages">
+      <strong>Berhasil (<span id="successful-count">0</span>):</strong>
+      <ul id="successful-list"></ul>
+    </div>
+    <div id="failed-messages" style="margin-top: 10px;">
+      <strong>Gagal (<span id="failed-count">0</span>):</strong>
+      <ul id="failed-list"></ul>
+    </div>
+    <button id="clear-results" style="background-color: #6c757d; margin-top: 15px;">Bersihkan Hasil</button>
+  </div>
+
+  <div class="footer" style="text-align: center; margin-top: 20px; font-size: 12px; color: #666;">
+    Developed by RzkyNT
   </div>
 
   <script src="popup.js"></script>

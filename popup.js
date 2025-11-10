@@ -18,6 +18,12 @@ document.addEventListener('DOMContentLoaded', function() {
   const progressText = document.getElementById('progress-text');
   const progressBar = document.getElementById('progress-bar');
   const currentStatus = document.getElementById('current-status');
+  const resultsContainer = document.getElementById('results-container');
+  const successfulCount = document.getElementById('successful-count');
+  const successfulList = document.getElementById('successful-list');
+  const failedCount = document.getElementById('failed-count');
+  const failedList = document.getElementById('failed-list');
+  const clearResultsBtn = document.getElementById('clear-results');
 
   let messagesToSend = [];
   let currentAttachment = null; // This will hold the selected image or document data
@@ -192,6 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
       sendMessagesButton.classList.add('hidden');
       progressContainer.classList.remove('hidden');
       cancelSendingButton.classList.remove('hidden');
+      resultsContainer.classList.add('hidden'); // Hide results when sending starts
       
       progressText.textContent = `Mengirim ${currentIndex} dari ${totalMessages} pesan...`;
       progressBar.style.width = `${(currentIndex / totalMessages) * 100}%`;
@@ -201,7 +208,37 @@ document.addEventListener('DOMContentLoaded', function() {
       sendMessagesButton.classList.remove('hidden');
       progressContainer.classList.add('hidden');
       cancelSendingButton.classList.add('hidden');
+      // Show results if there are any
+      chrome.runtime.sendMessage({ action: "getSendingResults" }, (results) => {
+        displaySendingResults(results);
+      });
     }
+  }
+
+  function displaySendingResults(results) {
+    successfulList.innerHTML = '';
+    failedList.innerHTML = '';
+
+    if (!results || (results.success.length === 0 && results.failed.length === 0)) {
+      resultsContainer.classList.add('hidden');
+      return;
+    }
+
+    resultsContainer.classList.remove('hidden');
+    successfulCount.textContent = results.success.length;
+    failedCount.textContent = results.failed.length;
+
+    results.success.forEach(item => {
+      const li = document.createElement('li');
+      li.textContent = `${item.number}`;
+      successfulList.appendChild(li);
+    });
+
+    results.failed.forEach(item => {
+      const li = document.createElement('li');
+      li.textContent = `${item.number} - Error: ${item.error || 'Unknown'}`;
+      failedList.appendChild(li);
+    });
   }
 
   // --- Persistence Logic ---
@@ -252,6 +289,13 @@ document.addEventListener('DOMContentLoaded', function() {
       currentStatus.textContent = 'Pengiriman dibatalkan.'; // Immediate feedback
       updateProgressUI('Pengiriman dibatalkan.', 0, 0, false); // Hide progress UI
     });
+    clearResultsBtn.addEventListener('click', () => {
+      chrome.runtime.sendMessage({ action: "clearSendingResults" }, (response) => {
+        if (response && response.status === "cleared") {
+          displaySendingResults({ success: [], failed: [] }); // Clear UI
+        }
+      });
+    });
 
     // Add listeners to save state on input
     manualNumbersTextarea.addEventListener('input', savePopupState);
@@ -288,5 +332,10 @@ document.addEventListener('DOMContentLoaded', function() {
       // If no active sending process, ensure UI is clean
       updateProgressUI('', 0, 0, false);
     }
+  });
+
+  // Request and display sending results on load
+  chrome.runtime.sendMessage({ action: "getSendingResults" }, (results) => {
+    displaySendingResults(results);
   });
 });
