@@ -29,10 +29,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const templateSelect = document.getElementById('template-select');
   const templateNameInput = document.getElementById('template-name');
   const templateContentTextarea = document.getElementById('template-content');
-  const addTemplateButton = document.getElementById('add-template');
   const saveTemplateButton = document.getElementById('save-template');
   const deleteTemplateButton = document.getElementById('delete-template');
   const useTemplateButton = document.getElementById('use-template');
+  const templateManagementSection = document.getElementById('template-management-section');
 
   let messagesToSend = [];
   let currentAttachment = null; // This will hold the selected image or document data
@@ -62,8 +62,10 @@ document.addEventListener('DOMContentLoaded', function() {
     templateContentTextarea.value = '';
     templateSelect.value = '';
     currentEditingTemplateId = null;
-    saveTemplateButton.textContent = 'Tambah Template'; // Reset button text
-    addTemplateButton.disabled = false; // Enable add button
+    saveTemplateButton.textContent = 'Simpan Template'; // Reset button text
+    saveTemplateButton.classList.remove('hidden'); // Show save button
+    deleteTemplateButton.classList.add('hidden'); // Hide delete button
+    useTemplateButton.classList.add('hidden'); // Hide use button
   }
 
   async function saveTemplate() {
@@ -71,19 +73,34 @@ document.addEventListener('DOMContentLoaded', function() {
     const content = templateContentTextarea.value.trim();
 
     if (!name || !content) {
-      alert('Nama dan isi template tidak boleh kosong.');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Peringatan!',
+        text: 'Nama dan isi template tidak boleh kosong.',
+        confirmButtonText: 'OK'
+      });
       return;
     }
 
     if (currentEditingTemplateId) {
       // Update existing template
       templates = templates.map(t => t.id === currentEditingTemplateId ? { ...t, name, content } : t);
-      alert('Template berhasil diperbarui!');
+      Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: 'Template berhasil diperbarui!',
+        confirmButtonText: 'OK'
+      });
     } else {
       // Add new template
       const newTemplate = { id: Date.now().toString(), name, content };
       templates.push(newTemplate);
-      alert('Template berhasil ditambahkan!');
+      Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: 'Template berhasil ditambahkan!',
+        confirmButtonText: 'OK'
+      });
     }
 
     await chrome.storage.local.set({ templates });
@@ -94,23 +111,49 @@ document.addEventListener('DOMContentLoaded', function() {
   async function deleteTemplate() {
     const selectedId = templateSelect.value;
     if (!selectedId) {
-      alert('Pilih template yang ingin dihapus.');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Peringatan!',
+        text: 'Pilih template yang ingin dihapus.',
+        confirmButtonText: 'OK'
+      });
       return;
     }
 
-    if (confirm('Anda yakin ingin menghapus template ini?')) {
-      templates = templates.filter(t => t.id !== selectedId);
-      await chrome.storage.local.set({ templates });
-      loadTemplates();
-      clearTemplateForm();
-      alert('Template berhasil dihapus.');
-    }
+    Swal.fire({
+      title: 'Konfirmasi',
+      text: 'Anda yakin ingin menghapus template ini?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Ya, hapus!',
+      cancelButtonText: 'Batal'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        templates = templates.filter(t => t.id !== selectedId);
+        await chrome.storage.local.set({ templates });
+        loadTemplates();
+        clearTemplateForm();
+        Swal.fire({
+          icon: 'success',
+          title: 'Berhasil!',
+          text: 'Template berhasil dihapus.',
+          confirmButtonText: 'OK'
+        });
+      }
+    });
   }
 
   function useTemplate() {
     const selectedId = templateSelect.value;
     if (!selectedId) {
-      alert('Pilih template yang ingin digunakan.');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Peringatan!',
+        text: 'Pilih template yang ingin digunakan.',
+        confirmButtonText: 'OK'
+      });
       return;
     }
     const selectedTemplate = templates.find(t => t.id === selectedId);
@@ -228,7 +271,12 @@ document.addEventListener('DOMContentLoaded', function() {
       return message;
     });
     console.log('Parsed CSV data:', messagesToSend);
-    alert(`${messagesToSend.length} messages loaded from CSV.`);
+    Swal.fire({
+      icon: 'success',
+      title: 'Berhasil!',
+      text: `${messagesToSend.length} pesan dimuat dari CSV.`,
+      confirmButtonText: 'OK'
+    });
   }
 
   function prepareAndSendMessages() {
@@ -238,7 +286,12 @@ document.addEventListener('DOMContentLoaded', function() {
       const numbers = manualNumbersTextarea.value.trim().split('\n').filter(n => n);
       const messageText = manualMessageTextarea.value;
       if (numbers.length === 0 || !messageText) {
-        alert('Please provide numbers and a message.');
+        Swal.fire({
+          icon: 'warning',
+          title: 'Peringatan!',
+          text: 'Harap berikan nomor dan pesan.',
+          confirmButtonText: 'OK'
+        });
         return;
       }
       messagesToSend = numbers.map(number => ({
@@ -249,7 +302,12 @@ document.addEventListener('DOMContentLoaded', function() {
       }));
     } else {
       if (messagesToSend.length === 0) {
-        alert('Please import a CSV file.');
+        Swal.fire({
+          icon: 'warning',
+          title: 'Peringatan!',
+          text: 'Harap impor file CSV.',
+          confirmButtonText: 'OK'
+        });
         return;
       }
       // For CSV mode, attachments are not supported via CSV file itself.
@@ -261,7 +319,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (messagesToSend.length === 0) {
-      alert('No messages to send.');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Peringatan!',
+        text: 'Tidak ada pesan untuk dikirim.',
+        confirmButtonText: 'OK'
+      });
       return;
     }
 
@@ -365,6 +428,7 @@ document.addEventListener('DOMContentLoaded', function() {
     modeRadios.forEach(radio => radio.addEventListener('change', () => {
       manualModeContainer.classList.toggle('hidden', radio.value !== 'manual');
       csvModeContainer.classList.toggle('hidden', radio.value !== 'csv');
+      templateManagementSection.classList.toggle('hidden', radio.value === 'csv'); // Hide template section in CSV mode
       savePopupState(); // Save state when mode changes
     }));
 
@@ -392,7 +456,6 @@ document.addEventListener('DOMContentLoaded', function() {
     manualMessageTextarea.addEventListener('input', savePopupState);
 
     // --- Template Management Event Listeners ---
-    addTemplateButton.addEventListener('click', clearTemplateForm);
     saveTemplateButton.addEventListener('click', saveTemplate);
     deleteTemplateButton.addEventListener('click', deleteTemplate);
     useTemplateButton.addEventListener('click', useTemplate);
@@ -404,11 +467,13 @@ document.addEventListener('DOMContentLoaded', function() {
           templateNameInput.value = selectedTemplate.name;
           templateContentTextarea.value = selectedTemplate.content;
           currentEditingTemplateId = selectedId;
-          saveTemplateButton.textContent = 'Perbarui Template';
-          addTemplateButton.disabled = true; // Disable add button when editing
+          saveTemplateButton.textContent = 'Perbarui Template'; // Change button text
+          saveTemplateButton.classList.remove('hidden'); // Ensure save button is visible
+          deleteTemplateButton.classList.remove('hidden'); // Show delete button
+          useTemplateButton.classList.remove('hidden'); // Show use button
         }
       } else {
-        clearTemplateForm();
+        clearTemplateForm(); // This will reset buttons to default (no template selected)
       }
     });
   }
