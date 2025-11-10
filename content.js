@@ -23,12 +23,27 @@ function waitForElement(selector, timeout = 20000) { // Default timeout increase
 async function waitForMessageBox(timeout = 20000) {
   const start = Date.now();
   while (Date.now() - start < timeout) {
-    const box = document.querySelector('div[contenteditable="true"][role="textbox"]');
-    if (box) return box;
+    // Ambil semua elemen yang bisa diketik
+    const boxes = document.querySelectorAll('div[contenteditable="true"][role="textbox"]');
+
+    for (const box of boxes) {
+      const placeholder = box.getAttribute('aria-placeholder') || '';
+      const tabindex = box.getAttribute('tabindex') || '';
+      
+      // ❌ Blacklist jika placeholder-nya mengandung "Tanya Meta AI" atau "Cari"
+      if (/meta ai|cari/i.test(placeholder) || tabindex === '3') {
+        continue;
+      }
+
+      // ✅ Jika bukan search bar, maka ini message box yang benar
+      return box;
+    }
+
     await new Promise(r => setTimeout(r, 300));
   }
-  throw new Error("Message box not found");
+  throw new Error("Message box not found (filtered out search bar)");
 }
+
 
 // Helper function to convert base64 to File and inject into input
 
