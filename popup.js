@@ -25,10 +25,100 @@ document.addEventListener('DOMContentLoaded', function() {
   const failedList = document.getElementById('failed-list');
   const clearResultsBtn = document.getElementById('clear-results');
 
+  // --- Template Management Elements ---
+  const templateSelect = document.getElementById('template-select');
+  const templateNameInput = document.getElementById('template-name');
+  const templateContentTextarea = document.getElementById('template-content');
+  const addTemplateButton = document.getElementById('add-template');
+  const saveTemplateButton = document.getElementById('save-template');
+  const deleteTemplateButton = document.getElementById('delete-template');
+  const useTemplateButton = document.getElementById('use-template');
+
   let messagesToSend = [];
   let currentAttachment = null; // This will hold the selected image or document data
 
+  // --- Template Management Variables ---
+  let templates = [];
+  let currentEditingTemplateId = null;
+
   // --- Functions ---
+
+  function loadTemplates() {
+    chrome.storage.local.get(['templates'], (result) => {
+      templates = result.templates || [];
+      templateSelect.innerHTML = '<option value="">-- Pilih Template --</option>';
+      templates.forEach(template => {
+        const option = document.createElement('option');
+        option.value = template.id;
+        option.textContent = template.name;
+        templateSelect.appendChild(option);
+      });
+      clearTemplateForm();
+    });
+  }
+
+  function clearTemplateForm() {
+    templateNameInput.value = '';
+    templateContentTextarea.value = '';
+    templateSelect.value = '';
+    currentEditingTemplateId = null;
+    saveTemplateButton.textContent = 'Tambah Template'; // Reset button text
+    addTemplateButton.disabled = false; // Enable add button
+  }
+
+  async function saveTemplate() {
+    const name = templateNameInput.value.trim();
+    const content = templateContentTextarea.value.trim();
+
+    if (!name || !content) {
+      alert('Nama dan isi template tidak boleh kosong.');
+      return;
+    }
+
+    if (currentEditingTemplateId) {
+      // Update existing template
+      templates = templates.map(t => t.id === currentEditingTemplateId ? { ...t, name, content } : t);
+      alert('Template berhasil diperbarui!');
+    } else {
+      // Add new template
+      const newTemplate = { id: Date.now().toString(), name, content };
+      templates.push(newTemplate);
+      alert('Template berhasil ditambahkan!');
+    }
+
+    await chrome.storage.local.set({ templates });
+    loadTemplates();
+    clearTemplateForm();
+  }
+
+  async function deleteTemplate() {
+    const selectedId = templateSelect.value;
+    if (!selectedId) {
+      alert('Pilih template yang ingin dihapus.');
+      return;
+    }
+
+    if (confirm('Anda yakin ingin menghapus template ini?')) {
+      templates = templates.filter(t => t.id !== selectedId);
+      await chrome.storage.local.set({ templates });
+      loadTemplates();
+      clearTemplateForm();
+      alert('Template berhasil dihapus.');
+    }
+  }
+
+  function useTemplate() {
+    const selectedId = templateSelect.value;
+    if (!selectedId) {
+      alert('Pilih template yang ingin digunakan.');
+      return;
+    }
+    const selectedTemplate = templates.find(t => t.id === selectedId);
+    if (selectedTemplate) {
+      manualMessageTextarea.value = selectedTemplate.content;
+      savePopupState(); // Save the updated message to storage
+    }
+  }
 
   function normalizePhoneNumber(phoneNumber) {
     let cleanedNumber = phoneNumber.replace(/\D/g, '');
@@ -300,6 +390,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add listeners to save state on input
     manualNumbersTextarea.addEventListener('input', savePopupState);
     manualMessageTextarea.addEventListener('input', savePopupState);
+
+    // --- Template Management Event Listeners ---
+    addTemplateButton.addEventListener('click', clearTemplateForm);
+    saveTemplateButton.addEventListener('click', saveTemplate);
+    deleteTemplateButton.addEventListener('click', deleteTemplate);
+    useTemplateButton.addEventListener('click', useTemplate);
+    templateSelect.addEventListener('change', () => {
+      const selectedId = templateSelect.value;
+      if (selectedId) {
+        const selectedTemplate = templates.find(t => t.id === selectedId);
+        if (selectedTemplate) {
+          templateNameInput.value = selectedTemplate.name;
+          templateContentTextarea.value = selectedTemplate.content;
+          currentEditingTemplateId = selectedId;
+          saveTemplateButton.textContent = 'Perbarui Template';
+          addTemplateButton.disabled = true; // Disable add button when editing
+        }
+      } else {
+        clearTemplateForm();
+      }
+    });
   }
 
   // --- Message Listener for Progress Updates ---
@@ -318,6 +429,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // --- Initialization ---
   setupEventListeners();
   loadPopupState();
+  loadTemplates(); // Load templates on popup initialization
   
   // Request initial sending status from background script
   chrome.runtime.sendMessage({ action: "getSendingStatus" }, (response) => {

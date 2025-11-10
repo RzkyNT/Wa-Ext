@@ -296,6 +296,24 @@
     <label><input type="radio" name="mode" value="csv"> Impor CSV</label>
   </div>
 
+  <!-- Template Management Section -->
+  <div class="section">
+    <div class="section-title">Manajemen Template</div>
+    <select id="template-select" style="width: 100%; padding: 10px; margin-top: 8px; border: 1px solid var(--color-border); border-radius: 8px; box-sizing: border-box; font-family: 'Inter', sans-serif; font-size: 14px; background-color: var(--color-surface-alt); color: var(--color-text); transition: border-color 0.2s ease, box-shadow 0.2s ease;">
+      <option value="">-- Pilih Template --</option>
+    </select>
+    <input type="text" id="template-name" placeholder="Nama Template" style="margin-top: 10px;">
+    <textarea id="template-content" rows="4" placeholder="Isi Template"></textarea>
+    <div style="display: flex; gap: 10px; margin-top: 10px;">
+      <button id="add-template" style="width: 50%; margin-top: 0;">Tambah Baru</button>
+      <button id="save-template" style="width: 50%; margin-top: 0;">Simpan Template</button>
+    </div>
+    <div style="display: flex; gap: 10px; margin-top: 10px;">
+      <button id="delete-template" style="width: 50%; margin-top: 0; background-color: #DC3545;">Hapus Template</button>
+      <button id="use-template" style="width: 50%; margin-top: 0; background-color: var(--color-accent);">Gunakan Template</button>
+    </div>
+  </div>
+
   <!-- Manual Input Mode -->
   <div id="manual-mode-container" class="mode-container">
     <div class="section-title">Input Manual</div>
