@@ -130,6 +130,9 @@ async function startSendingProcess(messages, attachment) {
             });
       await new Promise(resolve => setTimeout(resolve, 5000)); // Wait for chat to open
 
+      // Show overlay in content script for the newly loaded tab
+      await sendMessageToContentScript(tab.id, { action: "showOverlay" });
+
       console.log(`Sending message to content script for number: ${currentNumber}`);
       const sentMessage = await sendMessageToContentScript(tab.id, {
         action: "sendMessage", // New action for direct sending
@@ -194,19 +197,36 @@ async function startSendingProcess(messages, attachment) {
     }).catch(() => {}); // Catch error if popup is closed
   } finally {
     isSendingActive = false; // Reset flag
+    // Hide overlay in content script
+    await sendMessageToContentScript(tab.id, { action: "hideOverlay" });
   }
 }
 
 function sendMessageToContentScript(tabId, message) {
-  return new Promise((resolve) => {
-    chrome.tabs.sendMessage(tabId, message, (response) => {
-      if (chrome.runtime.lastError) {
-        console.error("Message sending failed:", chrome.runtime.lastError);
-        resolve({ status: "error", error: chrome.runtime.lastError.message });
-      } else {
-        resolve(response);
-      }
-    });
+  return new Promise(async (resolve) => { // Made async to use await
+    try {
+      // First, ensure the content script is injected.
+      // This will inject the script if it's not already present in the tab.
+      // It's safe to call multiple times; Chrome will only inject once per tab session.
+      await chrome.scripting.executeScript({
+        target: { tabId: tabId },
+        files: ['content.js']
+      });
+      console.log(`Content script injected into tab ${tabId}.`);
+
+      // Now send the message
+      chrome.tabs.sendMessage(tabId, message, (res) => {
+        if (chrome.runtime.lastError) {
+          console.error("Message sending failed after injection:", chrome.runtime.lastError);
+          resolve({ status: "error", error: chrome.runtime.lastError.message });
+        } else {
+          resolve(res);
+        }
+      });
+    } catch (e) {
+      console.error("Error injecting or sending message to content script:", e);
+      resolve({ status: "error", error: e.message });
+    }
   });
 }
 
