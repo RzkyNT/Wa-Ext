@@ -23,7 +23,7 @@ function waitForElement(selector, timeout = 20000) { // Default timeout increase
 async function waitForMessageBox(timeout = 20000) {
   const start = Date.now();
   while (Date.now() - start < timeout) {
-    const box = document.querySelector('div[contenteditable="true"][role="textbox"][data-lexical-editor="true"]');
+    const box = document.querySelector('div[contenteditable="true"][role="textbox"]');
     if (box) return box;
     await new Promise(r => setTimeout(r, 300));
   }
