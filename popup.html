@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WA Sender Free</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      width: 350px;
+      padding: 15px;
+      background-color: #f0f2f5; /* Light gray background */
+      color: #111b21; /* Dark text */
+    }
+    h1 {
+      font-size: 20px;
+      margin-top: 0;
+      color: #005c4b; /* WhatsApp green */
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .section {
+      margin-bottom: 15px;
+      background-color: #ffffff;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .section-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #005c4b;
+      font-size: 15px;
+    }
+    .mode-container {
+      border: 1px solid #e0e0e0;
+      padding: 10px;
+      border-radius: 8px;
+      background-color: #fcfcfc;
+    }
+    .hidden {
+      display: none;
+    }
+    input[type="text"], input[type="file"] {
+      width: calc(100% - 10px); /* Account for padding */
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #e0e0e0;
+      border-radius: 5px;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    textarea {
+      width: 100%; /* Set to 100% and let box-sizing handle padding */
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #e0e0e0;
+      border-radius: 5px;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      resize: vertical; /* Allow vertical resizing */
+    }
+    input[type="radio"] {
+      margin-right: 5px;
+    }
+    label {
+      margin-right: 15px;
+      font-size: 14px;
+    }
+    button {
+      background-color: #008069; /* WhatsApp dark green */
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      width: 100%;
+      margin-top: 15px;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #006a5e;
+    }
+    button#cancel-sending {
+      background-color: #dc3545; /* Red for cancel */
+      margin-top: 10px;
+    }
+    button#cancel-sending:hover {
+      background-color: #c82333;
+    }
+    #progress-container {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #e7ffdb; /* Light green for progress */
+      border: 1px solid #a4d492;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #005c4b;
+    }
+    #progress-text {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    #progress-bar-container {
+      width: 100%;
+      background-color: #e0e0e0;
+      border-radius: 5px;
+      height: 10px;
+      overflow: hidden;
+    }
+    #progress-bar {
+      height: 100%;
+      width: 0%;
+      background-color: #25d366; /* WhatsApp bright green */
+      border-radius: 5px;
+      transition: width 0.3s ease-in-out;
+    }
+  </style>
+</head>
+<body>
+  <h1>WA Sender Free</h1>
+
+  <div class="section">
+    <div class="section-title">Mode Pengiriman</div>
+    <label><input type="radio" name="mode" value="manual" checked> Input Manual</label>
+    <label><input type="radio" name="mode" value="csv"> Impor CSV</label>
+  </div>
+
+  <!-- Manual Input Mode -->
+  <div id="manual-mode-container" class="mode-container">
+    <div class="section-title">Input Manual</div>
+    <div class="section">
+      <div class="section-title">Nomor (satu per baris)</div>
+      <textarea id="manual-numbers" rows="5"></textarea>
+    </div>
+    <div class="section">
+      <div class="section-title">Pesan</div>
+      <textarea id="manual-message" rows="4"></textarea>
+    </div>
+    <div class="section">
+      <div class="section-title">Lampiran Gambar (Opsional)</div>
+      <input type="file" id="manual-image-attachment" accept="image/*">
+      <div id="image-attachment-display" style="margin-top: 5px; font-size: 13px; color: #333; display: flex; align-items: center; justify-content: space-between;">
+        <span id="image-filename"></span>
+        <button id="clear-image-attachment" style="background-color: #f44336; color: white; border: none; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 12px; margin-left: 10px; display: none;">Clear</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Lampiran Dokumen (Opsional)</div>
+      <input type="file" id="manual-document-attachment" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv">
+      <div id="document-attachment-display" style="margin-top: 5px; font-size: 13px; color: #333; display: flex; align-items: center; justify-content: space-between;">
+        <span id="document-filename"></span>
+        <button id="clear-document-attachment" style="background-color: #f44336; color: white; border: none; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 12px; margin-left: 10px; display: none;">Clear</button>
+      </div>
+      <p style="font-size: 12px; color: #666; margin-top: 5px;">
+        Catatan: Pengiriman dokumen mungkin tidak selalu berhasil karena batasan keamanan browser.
+      </p>
+    </div>
+  </div>
+
+  <!-- CSV Import Mode -->
+  <div id="csv-mode-container" class="mode-container hidden">
+    <div class="section-title">Impor CSV</div>
+    <div class="section">
+      <div class="section-title">Pilih File CSV</div>
+      <p>Unduh <a href="template.csv" download>template.csv</a>.</p>
+      <input type="file" id="csv-file" accept=".csv">
+    </div>
+  </div>
+
+  <button id="send-messages">Kirim Pesan Massal</button>
+  <button id="cancel-sending" class="hidden">Batalkan Kirim</button>
+
+  <div id="progress-container" class="hidden">
+    <div id="progress-text">Memulai pengiriman...</div>
+    <div id="progress-bar-container">
+      <div id="progress-bar"></div>
+    </div>
+    <div id="current-status"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
