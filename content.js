@@ -3,6 +3,56 @@ console.log("WA Sender Free: Content script loaded.");
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+function waitForElement(selector, timeout = 20000) { // Default timeout increased
+  return new Promise((resolve, reject) => {
+    const interval = setInterval(() => {
+      const element = document.querySelector(selector);
+      if (element) {
+        clearInterval(interval);
+        resolve(element);
+      }
+    }, 500);
+
+    setTimeout(() => {
+      clearInterval(interval);
+      reject(`Element not found: ${selector} (timeout after ${timeout / 1000}s)`);
+    }, timeout);
+  });
+}
+
+async function waitForMessageBox(timeout = 10000) {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    const box = document.querySelector('div[contenteditable="true"][role="textbox"]');
+    if (box) return box;
+    await new Promise(r => setTimeout(r, 300));
+  }
+  throw new Error("Message box not found");
+}
+
+// Helper function to convert base64 to File and inject into input
+function sendAttachment(base64, filename, mime) {
+  const byteString = atob(base64.split(',')[1]);
+  const arrayBuffer = new ArrayBuffer(byteString.length);
+  const uint8Array = new Uint8Array(arrayBuffer);
+  for (let i = 0; i < byteString.length; i++) {
+    uint8Array[i] = byteString.charCodeAt(i);
+  }
+  const file = new File([uint8Array], filename, { type: mime });
+
+  // Find the hidden file input element
+  // This selector might need adjustment based on WhatsApp Web's current DOM
+  const fileInput = document.querySelector('input[type="file"]'); 
+  if (!fileInput) {
+    throw new Error("File input element not found for attachment.");
+  }
+
+  const dataTransfer = new DataTransfer();
+  dataTransfer.items.add(file);
+  fileInput.files = dataTransfer.files;
+  fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("Content script received message:", request);
 
@@ -26,10 +76,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 async function sendMessage(messageText, attachment) { // Renamed and adapted
   try {
-    console.log("sendMessage: Waiting for message box...");
-    // Updated selector for message box
-    const messageBox = await waitForElement('div[contenteditable="true"][role="textbox"]', 20000); // Updated selector
-    if (!messageBox) throw new Error("Message box not found.");
+    console.log("sendMessage: Waiting for message box using waitForMessageBox.");
+    const messageBox = await waitForMessageBox(); // Use the new function
+    // if (!messageBox) throw new Error("Message box not found after waiting."); // waitForMessageBox already throws
     console.log("sendMessage: Message box found.");
 
     // Attempt to focus the document more robustly
@@ -41,7 +90,7 @@ async function sendMessage(messageText, attachment) { // Renamed and adapted
     // 1. Always insert text message first
     console.log("sendMessage: Inserting text message...");
     try {
-      messageBox.focus(); // Ensure focus before inserting text
+      // messageBox.focus(); // Already focused above
       document.execCommand('insertText', false, messageText);
       await delay(1000); // Give WhatsApp UI time to react and show send button
       console.log("sendMessage: Text inserted. Waiting for UI update.");
@@ -104,44 +153,4 @@ async function sendMessage(messageText, attachment) { // Renamed and adapted
     console.error("sendMessage: Error within sendMessage function:", error);
     throw error; // Re-throw to be caught by the listener's catch block
   }
-}
-
-function waitForElement(selector, timeout = 20000) { // Default timeout increased
-  return new Promise((resolve, reject) => {
-    const interval = setInterval(() => {
-      const element = document.querySelector(selector);
-      if (element) {
-        clearInterval(interval);
-        resolve(element);
-      }
-    }, 500);
-
-    setTimeout(() => {
-      clearInterval(interval);
-      reject(`Element not found: ${selector} (timeout after ${timeout / 1000}s)`);
-    }, timeout);
-  });
-}
-
-// Helper function to convert base64 to File and inject into input
-function sendAttachment(base64, filename, mime) {
-  const byteString = atob(base64.split(',')[1]);
-  const arrayBuffer = new ArrayBuffer(byteString.length);
-  const uint8Array = new Uint8Array(arrayBuffer);
-  for (let i = 0; i < byteString.length; i++) {
-    uint8Array[i] = byteString.charCodeAt(i);
-  }
-  const file = new File([uint8Array], filename, { type: mime });
-
-  // Find the hidden file input element
-  // This selector might need adjustment based on WhatsApp Web's current DOM
-  const fileInput = document.querySelector('input[type="file"]'); 
-  if (!fileInput) {
-    throw new Error("File input element not found for attachment.");
-  }
-
-  const dataTransfer = new DataTransfer();
-  dataTransfer.items.add(file);
-  fileInput.files = dataTransfer.files;
-  fileInput.dispatchEvent(new Event('change', { bubbles: true }));
 }
