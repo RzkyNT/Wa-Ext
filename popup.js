@@ -37,6 +37,12 @@ document.addEventListener('DOMContentLoaded', function() {
   const templateAccordionContent = document.getElementById('template-accordion-content');
   const accordionIcon = templateAccordionHeader.querySelector('.accordion-icon');
 
+  // --- Attachment Accordion Elements ---
+  const imageAttachmentAccordionHeader = document.getElementById('image-attachment-accordion-header');
+  const imageAttachmentAccordionContent = document.getElementById('image-attachment-accordion-content');
+  const documentAttachmentAccordionHeader = document.getElementById('document-attachment-accordion-header');
+  const documentAttachmentAccordionContent = document.getElementById('document-attachment-accordion-content');
+
   let messagesToSend = [];
   let currentAttachment = null; // This will hold the selected image or document data
 
@@ -485,6 +491,18 @@ document.addEventListener('DOMContentLoaded', function() {
       templateAccordionContent.classList.toggle('collapsed');
       templateAccordionHeader.classList.toggle('collapsed');
     });
+
+    // Accordion toggle for Image Attachment
+    imageAttachmentAccordionHeader.addEventListener('click', () => {
+      imageAttachmentAccordionContent.classList.toggle('collapsed');
+      imageAttachmentAccordionHeader.classList.toggle('collapsed');
+    });
+
+    // Accordion toggle for Document Attachment
+    documentAttachmentAccordionHeader.addEventListener('click', () => {
+      documentAttachmentAccordionContent.classList.toggle('collapsed');
+      documentAttachmentAccordionHeader.classList.toggle('collapsed');
+    });
   }
 
   // --- Message Listener for Progress Updates ---
@@ -505,9 +523,13 @@ document.addEventListener('DOMContentLoaded', function() {
   loadPopupState();
   loadTemplates(); // Load templates on popup initialization
   
-  // Set initial state of accordion to collapsed
+  // Set initial state of accordions to collapsed
   templateAccordionContent.classList.add('collapsed');
   templateAccordionHeader.classList.add('collapsed');
+  imageAttachmentAccordionContent.classList.add('collapsed');
+  imageAttachmentAccordionHeader.classList.add('collapsed');
+  documentAttachmentAccordionContent.classList.add('collapsed');
+  documentAttachmentAccordionHeader.classList.add('collapsed');
   
   // Request initial sending status from background script
   chrome.runtime.sendMessage({ action: "getSendingStatus" }, (response) => {

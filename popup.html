@@ -356,23 +356,31 @@
       <textarea id="manual-message" rows="4"></textarea>
     </div>
     <div class="section">
-      <div class="section-title">Lampiran Gambar (Opsional)</div>
-      <input type="file" id="manual-image-attachment" accept="image/*">
-      <div id="image-attachment-display" style="margin-top: 5px; font-size: 13px; color: #4b4b4b; display: flex; align-items: center; justify-content: space-between;">
-        <span id="image-filename"></span>
-        <button id="clear-image-attachment" style="background-color: #f44336; color: white; border: none; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 12px; margin-left: 10px; display: none;">Clear</button>
+      <div class="accordion-header" id="image-attachment-accordion-header">
+        <div class="section-title">Lampiran Gambar (Opsional) <span class="accordion-icon">&#9660;</span></div>
+      </div>
+      <div class="accordion-content" id="image-attachment-accordion-content">
+        <input type="file" id="manual-image-attachment" accept="image/*">
+        <div id="image-attachment-display" style="margin-top: 5px; font-size: 13px; color: #4b4b4b; display: flex; align-items: center; justify-content: space-between;">
+          <span id="image-filename"></span>
+          <button id="clear-image-attachment" style="background-color: #f44336; color: white; border: none; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 12px; margin-left: 10px; display: none;">Clear</button>
+        </div>
       </div>
     </div>
     <div class="section">
-      <div class="section-title">Lampiran Dokumen (Opsional)</div>
-      <input type="file" id="manual-document-attachment" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv">
-      <div id="document-attachment-display" style="margin-top: 5px; font-size: 13px; color: #4d4d4d; display: flex; align-items: center; justify-content: space-between;">
-        <span id="document-filename"></span>
-        <button id="clear-document-attachment" style="background-color: #f44336; color: white; border: none; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 12px; margin-left: 10px; display: none;">Clear</button>
+      <div class="accordion-header" id="document-attachment-accordion-header">
+        <div class="section-title">Lampiran Dokumen (Opsional) <span class="accordion-icon">&#9660;</span></div>
       </div>
-      <p style="font-size: 12px; color: #666; margin-top: 5px;">
-        Catatan: Pengiriman dokumen mungkin tidak selalu berhasil karena batasan keamanan browser.
-      </p>
+      <div class="accordion-content" id="document-attachment-accordion-content">
+        <input type="file" id="manual-document-attachment" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv">
+        <div id="document-attachment-display" style="margin-top: 5px; font-size: 13px; color: #4d4d4d; display: flex; align-items: center; justify-content: space-between;">
+          <span id="document-filename"></span>
+          <button id="clear-document-attachment" style="background-color: #f44336; color: white; border: none; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 12px; margin-left: 10px; display: none;">Clear</button>
+        </div>
+        <p style="font-size: 12px; color: #666; margin-top: 5px;">
+          Catatan: Pengiriman dokumen mungkin tidak selalu berhasil karena batasan keamanan browser.
+        </p>
+      </div>
     </div>
   </div>
 
