@@ -3,7 +3,7 @@ console.log("WA Sender Free: Content script loaded.");
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-function waitForElement(selector, timeout = 20000) { // Default timeout increased
+function waitForElement(selector, timeout = 20000) {
   return new Promise((resolve, reject) => {
     const interval = setInterval(() => {
       const element = document.querySelector(selector);
@@ -44,35 +44,17 @@ async function waitForMessageBox(timeout = 20000) {
   throw new Error("Message box not found (filtered out search bar)");
 }
 
-
-// Helper function to convert base64 to File and inject into input
-
+// Helper to convert base64 → File and inject
 function sendAttachment(base64, filename, mime) {
-
   const byteString = atob(base64.split(',')[1]);
-
   const arrayBuffer = new ArrayBuffer(byteString.length);
-
   const uint8Array = new Uint8Array(arrayBuffer);
-
-  for (let i = 0; i < byteString.length; i++) {
-
-    uint8Array[i] = byteString.charCodeAt(i);
-
-  }
-
+  for (let i = 0; i < byteString.length; i++) uint8Array[i] = byteString.charCodeAt(i);
   const file = new File([uint8Array], filename, { type: mime });
 
-
-
-  // Find the hidden file input element, prioritizing image-specific ones
-
   const fileInput =
-
     document.querySelector('input[type="file"][accept^="image"]') ||
-
     document.querySelector('input[type="file"][accept*="image"]') ||
-
     document.querySelector('input[type="file"]');
 
 
@@ -88,119 +70,144 @@ function sendAttachment(base64, filename, mime) {
 
 
   const dataTransfer = new DataTransfer();
-
   dataTransfer.items.add(file);
-
   fileInput.files = dataTransfer.files;
-
   fileInput.dispatchEvent(new Event('change', { bubbles: true }));
-
+  console.log(`Injected attachment: ${filename}`);
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("Content script received message:", request);
 
-  if (request.action === "sendMessage") { // Renamed action
+  if (request.action === "sendMessage") {
     console.log("Executing action: sendMessage");
-    sendMessage(request.message, request.attachment) // Pass message and the full attachment object
+    sendMessage(request.message, request.attachment)
       .then(() => {
         console.log("Action 'sendMessage' completed successfully.");
-        sendResponse({status: "ok"});
+        sendResponse({ status: "ok" });
       })
       .catch(err => {
         console.error("Error in 'sendMessage':", err);
-        // Ensure a string message is always returned
         const errorMessage = (err && err.message) ? err.message : String(err);
-        sendResponse({status: "error", error: errorMessage || "Unknown error in sendMessage"});
+        sendResponse({ status: "error", error: errorMessage || "Unknown error in sendMessage" });
       });
-    return true; // Indicates async response
+    return true;
   }
-  // Removed forwardLastMessage logic
 });
 
-async function sendMessage(messageText, attachment) { // Renamed and adapted
+async function insertMessageText(messageBox, messageText) {
+  console.log("insertMessageText: inserting formatted text...");
+
+  messageBox.focus();
+  await delay(500);
+
+  const lines = messageText.split('\n');
+  const inputEvent = (text) => {
+    document.execCommand('insertText', false, text);
+    messageBox.dispatchEvent(new InputEvent('input', { bubbles: true }));
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.trim() !== "") {
+      inputEvent(line);
+    }
+    if (i < lines.length - 1) {
+      // Simulasikan SHIFT + ENTER untuk newline (bukan hanya "\n")
+      const evt = new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', shiftKey: true, bubbles: true });
+      messageBox.dispatchEvent(evt);
+      await delay(100);
+      const evtUp = new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', shiftKey: true, bubbles: true });
+      messageBox.dispatchEvent(evtUp);
+      await delay(100);
+    }
+    await delay(50);
+  }
+
+  messageBox.dispatchEvent(new InputEvent('input', { bubbles: true }));
+  await delay(500);
+}
+
+
+async function handleAttachment(attachment) {
+  console.log(`Handling attachment of type ${attachment.fileType || 'unknown'}...`);
+  const attachButton = await waitForElement('span[data-icon="plus-rounded"]', 20000);
+  attachButton.click();
+  await delay(1000);
+
+  let attachmentTypeButtonSelector;
+  if (attachment.fileType === 'image') {
+    attachmentTypeButtonSelector =
+      'div[aria-label="Photos & Videos"], div[aria-label="Gallery"], span[data-icon="attach-image"], input[accept*="image"]';
+  } else if (attachment.fileType === 'document') {
+    attachmentTypeButtonSelector = 'span[data-icon="document-filled-refreshed"]';
+  } else {
+    throw new Error("Unsupported attachment fileType: " + attachment.fileType);
+  }
+
+  let attachmentTypeButton = await waitForElement(attachmentTypeButtonSelector, 10000);
+  if (!attachmentTypeButton) {
+    console.warn("Media button not found, trying document fallback.");
+    attachmentTypeButtonSelector = 'span[data-icon="document-filled-refreshed"]';
+    attachmentTypeButton = await waitForElement(attachmentTypeButtonSelector, 10000);
+    if (!attachmentTypeButton)
+      throw new Error(`${attachment.fileType} attachment type button not found, even with fallback.`);
+  }
+
+  attachmentTypeButton.click();
+  await delay(1000);
+  sendAttachment(attachment.data, attachment.name, attachment.type);
+  await delay(5000);
+  console.log("Attachment handled and ready to send.");
+}
+
+async function sendMessage(messageText, attachment) {
+  console.log("sendMessage: messageText received:", messageText);
   try {
-    console.log("sendMessage: Waiting for message box using waitForMessageBox.");
-    const messageBox = await waitForMessageBox(); // Use the new function
-    // if (!messageBox) throw new Error("Message box not found after waiting."); // waitForMessageBox already throws
-    console.log("sendMessage: Message box found.");
+    const messageBox = await waitForMessageBox();
+    await delay(500);
+    window.focus();
+    messageBox.focus();
+    await delay(500);
 
-    // Attempt to focus the document more robustly
-    await delay(500); // Small delay before focusing
-    window.focus(); // Attempt to focus the window
-    messageBox.focus(); // Explicitly focus the message box
-    await delay(500); // Small delay after focusing
-
-    // 1. Always insert text message first
-    console.log("sendMessage: Inserting text message...");
-    try {
-      // messageBox.focus(); // Already focused above
-      document.execCommand('insertText', false, messageText);
-      await delay(1000); // Give WhatsApp UI time to react and show send button
-      console.log("sendMessage: Text inserted. Waiting for UI update.");
-    } catch (textInsertError) {
-      throw new Error(`Failed to insert text: ${textInsertError.message}`);
-    }
-
-    // 2. If attachment, handle attachment
+    // 1️⃣ Kirim attachment lebih dulu
     if (attachment && attachment.data) {
-      console.log(`sendMessage: Handling attachment of type ${attachment.fileType || 'unknown'}...`);
-      try {
-        // 1. Find and click the attach button (plus-rounded icon)
-        const attachButton = await waitForElement('span[data-icon="plus-rounded"]', 20000); // Increased timeout
-        if (!attachButton) throw new Error("Attach button not found.");
-        attachButton.click();
-        await delay(1000); // Wait for attachment menu to appear
+      await handleAttachment(attachment);
+      console.log("Attachment selesai, menunggu caption box...");
+      await delay(2000);
 
-        let attachmentTypeButtonSelector;
-        if (attachment.fileType === 'image') {
-          attachmentTypeButtonSelector =
-            'div[aria-label="Photos & Videos"], div[aria-label="Gallery"], span[data-icon="attach-image"], input[accept*="image"]';
-        } else if (attachment.fileType === 'document') {
-          attachmentTypeButtonSelector = 'span[data-icon="document-filled-refreshed"]'; // Document
-        } else {
-          throw new Error("Unsupported attachment fileType: " + attachment.fileType);
-        }
+      // 🔍 Cari caption box setelah preview muncul
+      const captionBox = document.querySelector('div[contenteditable="true"][data-lexical-text="true"]')
+        || document.querySelector('div[contenteditable="true"]._ak1r')
+        || document.querySelector('div[contenteditable="true"][role="textbox"]:not([aria-placeholder*="Cari"])');
 
-        // 2. Find and click the specific attachment type button
-        let attachmentTypeButton = await waitForElement(attachmentTypeButtonSelector, 10000);
-        if (!attachmentTypeButton) {
-          console.warn("Media button not found, trying document fallback.");
-          attachmentTypeButtonSelector = 'span[data-icon="document-filled-refreshed"]'; // Fallback to document
-          attachmentTypeButton = await waitForElement(attachmentTypeButtonSelector, 10000); // Try again
-          if (!attachmentTypeButton) throw new Error(`${attachment.fileType} attachment type button not found, even with fallback.`);
-        }
-        attachmentTypeButton.click();
-        await delay(1000); // Wait for file input to be ready
-
-        // 3. Inject the file using the helper function
-        console.log('sendAttachment: File MIME type:', attachment.type); // Added logging
-        sendAttachment(attachment.data, attachment.name, attachment.type);
-        console.log(`Attachment ${attachment.name} injected.`);
-        await delay(5000); // Wait for WhatsApp to process the file and show preview
-
-        // No separate attachment send button click needed here,
-        // the main send button will handle both message and attachment.
-
-      } catch (attachmentError) {
-        const errorMessage = (attachmentError && attachmentError.message) ? attachmentError.message : String(attachmentError);
-        throw new Error(`Failed to send attachment: ${errorMessage}`);
+      if (captionBox) {
+        console.log("Caption box ditemukan, mengetik caption...");
+        await insertMessageText(captionBox, messageText);
+      } else {
+        console.warn("Caption box tidak ditemukan, fallback ke message box biasa.");
+        await insertMessageText(messageBox, messageText);
       }
+
+      // Klik tombol kirim di modal (preview)
+      const sendButton = await waitForElement('span[data-icon="wds-ic-send-filled"]', 20000);
+      sendButton.click();
+      console.log("Attachment dengan caption terkirim.");
+      await delay(2000);
+      return; // penting: stop di sini, jangan lanjut ke messageBox
     }
 
-    await delay(1000); // General delay before looking for send button
+    // 2️⃣ Jika tidak ada attachment, kirim pesan biasa
+    await insertMessageText(messageBox, messageText);
+    console.log("Text inserted WYSIWYG (tanpa attachment).");
 
-    // 3. Find and click the main send button (for both message and attachment)
-    console.log("sendMessage: Waiting for send button...");
-    const sendButton = await waitForElement('span[data-icon="wds-ic-send-filled"]', 20000); // Main send button
-    if (!sendButton) throw new Error("Send button not found.");
-    console.log("sendMessage: Send button found. Clicking...");
+    const sendButton = await waitForElement('span[data-icon="wds-ic-send-filled"]', 20000);
     sendButton.click();
-
+    console.log("Message sent.");
     await delay(2000);
-    console.log("sendMessage: Message sent.");
   } catch (error) {
-    console.error("sendMessage: Error within sendMessage function:", error);
-    throw error; // Re-throw to be caught by the listener's catch block
+    console.error("sendMessage: Error:", error);
+    throw error;
   }
 }
+
