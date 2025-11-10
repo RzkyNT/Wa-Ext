@@ -23,25 +23,42 @@ function waitForElement(selector, timeout = 20000) {
 async function waitForMessageBox(timeout = 20000) {
   const start = Date.now();
   while (Date.now() - start < timeout) {
-    // Ambil semua elemen yang bisa diketik
-    const boxes = document.querySelectorAll('div[contenteditable="true"][role="textbox"]');
-
-    for (const box of boxes) {
-      const placeholder = box.getAttribute('aria-placeholder') || '';
-      const tabindex = box.getAttribute('tabindex') || '';
-      
-      // ❌ Blacklist jika placeholder-nya mengandung "Tanya Meta AI" atau "Cari"
-      if (/meta ai|cari/i.test(placeholder) || tabindex === '3') {
-        continue;
-      }
-
-      // ✅ Jika bukan search bar, maka ini message box yang benar
-      return box;
-    }
-
+    const box = document.querySelector('div[contenteditable="true"][role="textbox"]');
+    if (box) return box;
     await new Promise(r => setTimeout(r, 300));
   }
-  throw new Error("Message box not found (filtered out search bar)");
+  throw new Error("Message box not found");
+}
+
+/**
+ * Tunggu sampai WhatsApp benar-benar siap (logo WhatsApp muncul)
+ * agar tidak tergantung delay waktu.
+ */
+async function waitForWhatsAppReady(timeout = 60000) {
+  const startTime = Date.now();
+
+  console.log("Menunggu WhatsApp Web siap...");
+
+  while (Date.now() - startTime < timeout) {
+    const waLogo = document.querySelector(
+      'span[aria-hidden="false"][aria-label="WhatsApp"][data-icon="wa-wordmark-refreshed"]'
+    );
+
+    if (waLogo && waLogo.offsetParent !== null) {
+      console.log("✅ WhatsApp sudah siap digunakan.");
+      return true;
+    }
+
+    // Cek juga apakah tampilan error koneksi muncul
+    const reconnectBanner = document.querySelector('div[role="alert"]');
+    if (reconnectBanner && reconnectBanner.textContent.match(/reconnecting|memuat ulang/i)) {
+      console.warn("⚠️ WhatsApp masih mencoba terhubung ulang...");
+    }
+
+    await new Promise(r => setTimeout(r, 500));
+  }
+
+  throw new Error("❌ WhatsApp tidak siap setelah 60 detik.");
 }
 
 // Helper to convert base64 → File and inject
@@ -164,6 +181,7 @@ async function handleAttachment(attachment) {
 async function sendMessage(messageText, attachment) {
   console.log("sendMessage: messageText received:", messageText);
   try {
+    await waitForWhatsAppReady(); // Wait for WhatsApp to be ready
     const messageBox = await waitForMessageBox();
     await delay(500);
     window.focus();
