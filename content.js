@@ -144,18 +144,36 @@ function waitForElement(selector, timeout = 20000) {
 async function waitForMessageBox(timeout = 20000) {
   const start = Date.now();
   while (Date.now() - start < timeout) {
+    // Ambil semua contenteditable textbox
     const boxes = document.querySelectorAll('div[contenteditable="true"][role="textbox"]');
+
     for (const box of boxes) {
-      const title = box.getAttribute('title') || '';
-      // If it doesn't have a title or the title doesn't contain "Search" or "Cari", it's likely the message box
-      if (!title.match(/search|cari/i)) {
-        return box;
+      // 1. Cek placeholder (paling andal di WhatsApp Web saat ini)
+      const placeholder = box.getAttribute('aria-placeholder') || '';
+      
+      // 2. Cek juga innerText jika aria-placeholder tidak ada (fallback)
+      const innerText = box.innerText.toLowerCase();
+      
+      // Jika placeholder atau teks mengandung "cari" atau "search", LEWATI
+      if (
+        placeholder.toLowerCase().includes('cari') ||
+        placeholder.toLowerCase().includes('search') ||
+        innerText.includes('cari') ||
+        innerText.includes('search')
+      ) {
+        continue; // ini adalah kotak pencarian, bukan message box
       }
+
+      // Jika lolos filter, ini kemungkinan besar message box obrolan
+      return box;
     }
+
     await new Promise(r => setTimeout(r, 300));
   }
   throw new Error("Message box not found (after filtering search inputs)");
-}    /**
+}
+
+  /**
  * Tunggu sampai WhatsApp benar-benar siap (logo WhatsApp muncul)
  * agar tidak tergantung delay waktu.
  */
@@ -247,61 +265,74 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 async function insertMessageText(messageBox, messageText) {
-  console.log("insertMessageText: messageText to insert:", messageText); // Added logging
-  console.log("insertMessageText: inserting formatted text...");
-
+  console.log("insertMessageText: messageText to insert:", messageText);
   messageBox.focus();
   await delay(500);
 
-  // --- New code for clearing existing text ---
-  console.log("insertMessageText: Clearing existing text in message box...");
-  messageBox.innerHTML = ''; // Clear contenteditable div
-  messageBox.innerText = ''; // Ensure text is also cleared
-  await delay(500); // Give some time for the text to clear
-  console.log("insertMessageText: Existing text cleared.");
-  // --- End of new code ---
+  // Clear existing content
+  messageBox.innerHTML = '';
+  await delay(300);
 
   const lines = messageText.split('\n');
-  const inputEvent = (text) => {
-    document.execCommand('insertText', false, text);
-    messageBox.dispatchEvent(new InputEvent('input', { bubbles: true }));
-  };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (line.trim() !== "") {
-      inputEvent(line);
+
+    if (line !== '') {
+      // Insert text character-by-character or as a whole using input events
+      // We'll use a more reliable method: set data on input event
+      const inputEvent = new InputEvent('input', {
+        bubbles: true,
+        inputType: 'insertText',
+        data: line,
+        dataTransfer: null
+      });
+      messageBox.dispatchEvent(inputEvent);
+      await delay(50);
     }
+
+    // Jika ini bukan baris terakhir, tambahkan line break dengan Shift+Enter
     if (i < lines.length - 1) {
-      // Simulasikan SHIFT + ENTER untuk newline (bukan hanya "\n")
-      const evt = new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', shiftKey: true, bubbles: true });
-      messageBox.dispatchEvent(evt);
-      await delay(100);
-      const evtUp = new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', shiftKey: true, bubbles: true });
-      messageBox.dispatchEvent(evtUp);
+      // Simulate Shift + Enter
+      const keydownEvent = new KeyboardEvent('keydown', {
+        key: 'Enter',
+        code: 'Enter',
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true
+      });
+      const keyupEvent = new KeyboardEvent('keyup', {
+        key: 'Enter',
+        code: 'Enter',
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true
+      });
+
+      messageBox.dispatchEvent(keydownEvent);
+      await delay(50);
+      messageBox.dispatchEvent(keyupEvent);
       await delay(100);
     }
-    await delay(50);
   }
 
+  // Final input event to ensure WhatsApp recognizes the change
   messageBox.dispatchEvent(new InputEvent('input', { bubbles: true }));
   await delay(500);
 
-  // --- New code for text verification ---
-  const expectedTextHtml = messageText.replace(/\n/g, '<br>');
+  // Verifikasi
+  const expectedHtml = messageText.replace(/\n/g, '<br>');
   const verificationStartTime = Date.now();
-  const verificationTimeout = 5000; // 5 seconds timeout for verification
+  const verificationTimeout = 5000;
 
   while (Date.now() - verificationStartTime < verificationTimeout) {
-    // Use innerHTML for comparison as WhatsApp uses <br> for newlines
-    if (messageBox.innerHTML.includes(expectedTextHtml)) {
-      console.log("insertMessageText: Message text successfully verified in the box.");
+    if (messageBox.innerHTML.includes(expectedHtml)) {
+      console.log("insertMessageText: Message text successfully verified.");
       return;
     }
-    await delay(100); // Check every 100ms
+    await delay(100);
   }
-  console.warn("insertMessageText: Message text verification failed within timeout.");
-  // --- End of new code ---
+  console.warn("insertMessageText: Verification failed — content may not match.");
 }
 
 
