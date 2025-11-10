@@ -284,6 +284,33 @@
   background: var(--color-accent-alt);  /* warna aksen saat dihover */
 }
 
+    .accordion-header {
+      cursor: pointer;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .accordion-header:hover {
+      background-color: var(--color-surface-alt);
+      border-radius: 8px;
+    }
+    .accordion-icon {
+      transition: transform 0.3s ease;
+    }
+    .accordion-header.collapsed .accordion-icon {
+      transform: rotate(-90deg);
+    }
+    .accordion-content {
+      max-height: 500px; /* Arbitrary max-height for transition */
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+    .accordion-content.collapsed {
+      max-height: 0;
+    }
+
   </style>
   <link rel="stylesheet" href="libraries/sweetalert2.min.css">
 </head>
@@ -298,18 +325,22 @@
 
   <!-- Template Management Section -->
   <div class="section" id="template-management-section">
-    <div class="section-title">Manajemen Template</div>
-    <select id="template-select" style="width: 100%; padding: 10px; margin-top: 8px; border: 1px solid var(--color-border); border-radius: 8px; box-sizing: border-box; font-family: 'Inter', sans-serif; font-size: 14px; background-color: var(--color-surface-alt); color: var(--color-text); transition: border-color 0.2s ease, box-shadow 0.2s ease;">
-      <option value="">-- Pilih Template --</option>
-    </select>
-    <input type="text" id="template-name" placeholder="Nama Template" style="margin-top: 10px;">
-    <textarea id="template-content" rows="4" placeholder="Isi Template"></textarea>
-    <div style="display: flex; gap: 10px; margin-top: 10px;">
-      <button id="save-template" style="width: 100%; margin-top: 0;">Simpan Template</button>
+    <div class="accordion-header" id="template-accordion-header">
+      <div class="section-title">Manajemen Template <span class="accordion-icon">&#9660</span></div>
     </div>
-    <div style="display: flex; gap: 10px; margin-top: 10px;">
-      <button id="delete-template" style="width: 50%; margin-top: 0; background-color: #DC3545;">Hapus Template</button>
-      <button id="use-template" style="width: 50%; margin-top: 0; background-color: var(--color-accent);">Gunakan Template</button>
+    <div class="accordion-content" id="template-accordion-content">
+      <select id="template-select" style="width: 100%; padding: 10px; margin-top: 8px; border: 1px solid var(--color-border); border-radius: 8px; box-sizing: border-box; font-family: 'Inter', sans-serif; font-size: 14px; background-color: var(--color-surface-alt); color: var(--color-text); transition: border-color 0.2s ease, box-shadow 0.2s ease;">
+        <option value="">-- Pilih Template --</option>
+      </select>
+      <input type="text" id="template-name" placeholder="Nama Template" style="margin-top: 10px;">
+      <textarea id="template-content" rows="4" placeholder="Isi Template"></textarea>
+      <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button id="save-template" style="width: 100%; margin-top: 0;">Simpan Template</button>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button id="delete-template" style="width: 50%; margin-top: 0; background-color: #DC3545;">Hapus Template</button>
+        <button id="use-template" style="width: 50%; margin-top: 0; background-color: var(--color-accent);">Gunakan Template</button>
+      </div>
     </div>
   </div>
 

@@ -33,6 +33,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const deleteTemplateButton = document.getElementById('delete-template');
   const useTemplateButton = document.getElementById('use-template');
   const templateManagementSection = document.getElementById('template-management-section');
+  const templateAccordionHeader = document.getElementById('template-accordion-header');
+  const templateAccordionContent = document.getElementById('template-accordion-content');
+  const accordionIcon = templateAccordionHeader.querySelector('.accordion-icon');
 
   let messagesToSend = [];
   let currentAttachment = null; // This will hold the selected image or document data
@@ -476,6 +479,12 @@ document.addEventListener('DOMContentLoaded', function() {
         clearTemplateForm(); // This will reset buttons to default (no template selected)
       }
     });
+
+    // Accordion toggle for Template Management
+    templateAccordionHeader.addEventListener('click', () => {
+      templateAccordionContent.classList.toggle('collapsed');
+      templateAccordionHeader.classList.toggle('collapsed');
+    });
   }
 
   // --- Message Listener for Progress Updates ---
@@ -495,6 +504,10 @@ document.addEventListener('DOMContentLoaded', function() {
   setupEventListeners();
   loadPopupState();
   loadTemplates(); // Load templates on popup initialization
+  
+  // Set initial state of accordion to collapsed
+  templateAccordionContent.classList.add('collapsed');
+  templateAccordionHeader.classList.add('collapsed');
   
   // Request initial sending status from background script
   chrome.runtime.sendMessage({ action: "getSendingStatus" }, (response) => {
