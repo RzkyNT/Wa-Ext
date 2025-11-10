@@ -3,174 +3,292 @@
 <head>
   <title>WA Sender By RzkyNT</title>
   <style>
+    /* --- CSS Variables (Design Tokens) --- */
+    :root {
+      /* Base Layer */
+      --color-bg: #04070D; /* Dark bluish black */
+      --color-surface: #0B0F14; /* Darker panel */
+      --color-surface-alt: #11161C; /* Lighter surface for hover/second layer */
+      --color-border: rgba(255,255,255,0.06); /* Subtle glassmorphism border */
+      --color-shadow: rgba(0,0,0,0.45); /* Soft shadow for depth */
+
+      /* Text Colors */
+      --color-text: #F2F4F6; /* Soft white */
+      --color-text-muted: #B0B6BD; /* Light gray for descriptions */
+      --color-text-inverse: #0B0D11; /* Dark text for white buttons */
+
+      /* Accent Colors */
+      --color-accent: #25D366; /* Electric cyan */
+      --color-accent-alt: #2BE07B; /* Soft neon green */
+      --color-link: #1DA851; /* Slightly darker cyan for links */
+      --color-glow: rgba(0, 255, 34, 0.3); /* Light glow effect */
+
+      /* CTA & Interaction */
+      --color-btn-primary-bg: #FFFFFF; /* Pure white for primary buttons */
+      --color-btn-primary-text: #000814; /* Dark text for primary buttons */
+      --color-btn-secondary-bg: transparent; /* Transparent for secondary buttons */
+      --color-btn-secondary-border: rgba(255,255,255,0.15); /* Soft outline for secondary buttons */
+    }
+
+    /* --- General Styles --- */
     body {
-      font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font stack */
+      font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font stack */
       width: 350px;
-      padding: 20px; /* Increased padding */
-      background-color: #e9ebee; /* Lighter, modern background */
-      color: #333; /* Darker, more readable text */
+      padding: 20px;
+      background-color: var(--color-bg);
+      color: var(--color-text);
       line-height: 1.6;
+      box-sizing: border-box;
     }
+
     h1 {
-      font-size: 24px; /* Slightly larger */
+      font-size: 24px;
       margin-top: 0;
-      color: #128C7E; /* WhatsApp brand green */
+      color: var(--color-accent); /* Use accent color for main title */
       text-align: center;
-      margin-bottom: 25px; /* Increased margin */
-      font-weight: 500; /* Medium weight */
+      margin-bottom: 25px;
+      font-weight: 700; /* Bolder title */
+      text-shadow: 0 0 8px var(--color-glow); /* Subtle glow for title */
     }
+
     .section {
-      margin-bottom: 20px; /* Increased margin */
-      background-color: #ffffff;
-      padding: 15px; /* Increased padding */
-      border-radius: 10px; /* More rounded corners */
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* More prominent shadow */
+      margin-bottom: 20px;
+      background-color: var(--color-surface);
+      padding: 15px;
+      border-radius: 12px; /* More rounded */
+      box-shadow: 0 4px 15px var(--color-shadow); /* Deeper shadow */
+      border: 1px solid var(--color-border); /* Glassmorphism border */
+      backdrop-filter: blur(5px); /* Optional: for glassmorphism effect */
+      -webkit-backdrop-filter: blur(5px);
     }
+
     .section-title {
-      font-weight: 600; /* Bolder */
-      margin-bottom: 10px;
-      color: #075E54; /* Darker WhatsApp green */
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--color-text);
       font-size: 16px;
-      border-bottom: 1px solid #eee; /* Subtle separator */
-      padding-bottom: 8px;
+      border-bottom: 1px solid var(--color-border); /* Use variable for border */
+      padding-bottom: 10px;
     }
+
     .mode-container {
-      border: 1px solid #ddd; /* Lighter border */
+      border: 1px solid var(--color-border);
       padding: 15px;
       border-radius: 10px;
-      background-color: #fdfdfd;
+      background-color: var(--color-surface-alt); /* Lighter surface for mode selection */
     }
+
     .hidden {
       display: none;
     }
+
     input[type="text"], input[type="file"], textarea {
-      width: 100%; /* Full width */
-      padding: 10px; /* Increased padding */
-      margin-top: 8px; /* Increased margin */
-      border: 1px solid #ccc; /* Lighter border */
-      border-radius: 5px;
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
       box-sizing: border-box;
-      font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Inter', sans-serif;
       font-size: 14px;
+      background-color: var(--color-surface-alt);
+      color: var(--color-text);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
+    input[type="text"]:focus, textarea:focus {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 2px rgba(0, 255, 64, 0.2);
+      outline: none;
+    }
+
     textarea {
       resize: vertical;
-      min-height: 60px; /* Minimum height for textareas */
+      min-height: 60px;
     }
+
     input[type="radio"] {
-      margin-right: 8px; /* Increased margin */
-      transform: scale(1.1); /* Slightly larger radio buttons */
+      margin-right: 8px;
+      transform: scale(1.1);
+      accent-color: var(--color-accent); /* Style radio button itself */
     }
+
     label {
-      margin-right: 20px; /* Increased margin */
+      margin-right: 20px;
       font-size: 14px;
-      color: #555;
+      color: var(--color-text-muted);
+      display: inline-flex;
+      align-items: center;
+      cursor: pointer;
     }
+
     button {
-      background-color: #25D366; /* WhatsApp bright green */
-      color: white;
-      padding: 12px 15px; /* Increased padding */
+      background-color: var(--color-btn-primary-bg);
+      color: var(--color-btn-primary-text);
+      padding: 12px 15px;
       border: none;
-      border-radius: 5px;
+      border-radius: 8px; /* Slightly less rounded for buttons */
       cursor: pointer;
       font-size: 16px;
       width: 100%;
-      margin-top: 18px; /* Increased margin */
-      transition: background-color 0.2s ease, transform 0.1s ease; /* Smooth transitions */
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      margin-top: 18px;
+      transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      font-weight: 600;
     }
     button:hover {
-      background-color: #1DA851; /* Darker green on hover */
-      transform: translateY(-1px); /* Slight lift effect */
+      background-color: #f0f0f0; /* Slightly darker white on hover */
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.4);
     }
     button:active {
       transform: translateY(0);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
+
+    button#send-messages {
+      background-color: var(--color-accent); /* Use accent for primary action */
+      color: var(--color-text-inverse); /* Dark text on accent */
+    }
+    button#send-messages:hover {
+      background-color: var(--color-link); /* Darker accent on hover */
+      box-shadow: 0 6px 15px var(--color-glow); /* Glow effect on hover */
+    }
+
     button#cancel-sending {
       background-color: #DC3545; /* Red for cancel */
-      margin-top: 10px;
+      color: white;
     }
     button#cancel-sending:hover {
       background-color: #C82333;
     }
+
     button#clear-results {
-      background-color: #6c757d; /* Gray for clear */
-      margin-top: 15px;
+      background-color: var(--color-surface-alt); /* Use surface-alt for secondary action */
+      color: var(--color-text);
+      border: 1px solid var(--color-btn-secondary-border);
+      box-shadow: none;
     }
     button#clear-results:hover {
-      background-color: #5a6268;
+      background-color: var(--color-surface);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
+
     #progress-container {
-      margin-top: 25px; /* Increased margin */
+      margin-top: 25px;
       padding: 15px;
-      background-color: #e6ffed; /* Lighter green for progress */
-      border: 1px solid #a3e6b8;
+      background-color: var(--color-surface-alt);
+      border: 1px solid var(--color-border);
       border-radius: 10px;
       font-size: 14px;
-      color: #075E54;
+      color: var(--color-text-muted);
+      box-shadow: 0 2px 8px var(--color-shadow);
     }
     #progress-text {
       font-weight: bold;
       margin-bottom: 8px;
-      color: #075E54;
+      color: var(--color-text);
     }
     #progress-bar-container {
       width: 100%;
-      background-color: #e0e0e0;
+      background-color: var(--color-surface);
       border-radius: 5px;
-      height: 12px; /* Slightly taller */
+      height: 12px;
       overflow: hidden;
+      border: 1px solid var(--color-border);
     }
     #progress-bar {
       height: 100%;
       width: 0%;
-      background-color: #25D366; /* WhatsApp bright green */
+      background-color: var(--color-accent-alt); /* Use accent-alt for progress */
       border-radius: 5px;
       transition: width 0.3s ease-in-out;
     }
     #current-status {
       margin-top: 10px;
       font-style: italic;
-      color: #555;
+      color: var(--color-text-muted);
     }
+
     #results-container {
       margin-top: 25px;
       padding: 15px;
-      background-color: #f8f9fa; /* Light background for results */
-      border: 1px solid #dee2e6;
+      background-color: var(--color-surface);
+      border: 1px solid var(--color-border);
       border-radius: 10px;
+      box-shadow: 0 4px 15px var(--color-shadow);
     }
     #successful-messages ul, #failed-messages ul {
-      list-style-type: none; /* Remove bullet points */
+      list-style-type: none;
       padding-left: 0;
-      margin-top: 5px;
-      max-height: 150px; /* Limit height for scroll */
-      overflow-y: auto; /* Scroll if too many items */
-      border: 1px solid #eee;
-      border-radius: 5px;
-      padding: 8px;
-      background-color: #fff;
+      margin-top: 10px;
+      max-height: 150px;
+      overflow-y: auto;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      padding: 10px;
+      background-color: var(--color-surface-alt);
     }
     #successful-messages li {
-      color: #28a745; /* Green for success */
-      margin-bottom: 3px;
+      color: var(--color-accent-alt); /* Green for success */
+      margin-bottom: 5px;
+      font-size: 13px;
     }
     #failed-messages li {
-      color: #dc3545; /* Red for failure */
-      margin-bottom: 3px;
+      color: #DC3545; /* Red for failure */
+      margin-bottom: 5px;
+      font-size: 13px;
     }
+    #failed-messages li strong {
+      color: var(--color-text);
+    }
+
     .footer {
       text-align: center;
-      margin-top: 30px; /* Increased margin */
+      margin-top: 30px;
       font-size: 12px;
-      color: #888;
-      border-top: 1px solid #eee;
+      color: var(--color-text-muted);
+      border-top: 1px solid var(--color-border);
       padding-top: 15px;
     }
+
+    a {
+      color: var(--color-link);
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+
+    /* Target semua scrollbar di halaman */
+::-webkit-scrollbar {
+  width: 10px;              /* lebar scrollbar (vertical) */
+  height: 10px;             /* tinggi scrollbar (horizontal) */
+}
+
+/* Track (latar belakang scrollbar) */
+::-webkit-scrollbar-track {
+  background: var(--color-surface);  /* area di belakang thumb */
+  border-radius: 8px;
+}
+
+/* Thumb (bagian yang digeser) */
+::-webkit-scrollbar-thumb {
+  background: var(--color-accent);   /* warna utama */
+  border-radius: 8px;
+  border: 2px solid var(--color-surface); /* memberi jarak agar terlihat 'floating' */
+}
+
+/* Hover effect */
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent-alt);  /* warna aksen saat dihover */
+}
+
+  </style>
   </style>
 </head>
 <body>
-  <h1>WA Sender by RzkyNT</h1>
+  <h1>WA Sender</h1>
 
   <div class="section">
     <div class="section-title">Mode Pengiriman</div>
@@ -192,7 +310,7 @@
     <div class="section">
       <div class="section-title">Lampiran Gambar (Opsional)</div>
       <input type="file" id="manual-image-attachment" accept="image/*">
-      <div id="image-attachment-display" style="margin-top: 5px; font-size: 13px; color: #333; display: flex; align-items: center; justify-content: space-between;">
+      <div id="image-attachment-display" style="margin-top: 5px; font-size: 13px; color: #4b4b4b; display: flex; align-items: center; justify-content: space-between;">
         <span id="image-filename"></span>
         <button id="clear-image-attachment" style="background-color: #f44336; color: white; border: none; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 12px; margin-left: 10px; display: none;">Clear</button>
       </div>
@@ -200,7 +318,7 @@
     <div class="section">
       <div class="section-title">Lampiran Dokumen (Opsional)</div>
       <input type="file" id="manual-document-attachment" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv">
-      <div id="document-attachment-display" style="margin-top: 5px; font-size: 13px; color: #333; display: flex; align-items: center; justify-content: space-between;">
+      <div id="document-attachment-display" style="margin-top: 5px; font-size: 13px; color: #4d4d4d; display: flex; align-items: center; justify-content: space-between;">
         <span id="document-filename"></span>
         <button id="clear-document-attachment" style="background-color: #f44336; color: white; border: none; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 12px; margin-left: 10px; display: none;">Clear</button>
       </div>
