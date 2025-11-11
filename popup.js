@@ -295,10 +295,22 @@ document.addEventListener('DOMContentLoaded', function() {
     if (target.tagName === 'TD' && target.contentEditable === 'true') {
       const rowIndex = parseInt(target.dataset.rowIndex);
       const headerName = target.dataset.headerName;
-      const newValue = target.textContent;
+      let newValue = target.innerHTML;
+      // Normalize newlines: replace <br>, <div>, <p> with a consistent newline character
+      newValue = newValue
+        .replace(/<br\s*\/?>/gi, '__BR__') // Replace <br> with a placeholder
+        .replace(/<\/div>/gi, '__BR__')   // Replace </div> with a placeholder
+        .replace(/<\/p>/gi, '__BR__')    // Replace </p> with a placeholder
+        .replace(/<div>/gi, '__BR__')    // Replace <div> with a placeholder
+        .replace(/<p>/gi, '__BR__')     // Replace <p> with a placeholder
+        .replace(/&nbsp;/gi, ' ')       // Convert non-breaking spaces
+        .replace(/__BR__\s*__BR__/gi, '__BR__') // Collapse multiple placeholders
+        .replace(/__BR__/gi, '\n')      // Convert placeholder to newline
+        .trim(); // Trim leading/trailing whitespace
 
       if (messagesToSend[rowIndex] && messagesToSend[rowIndex][headerName] !== undefined) {
         messagesToSend[rowIndex][headerName] = newValue;
+        chrome.storage.local.set({ messagesToSendExcel: messagesToSend }); // Save to local storage
         console.log(`Updated messagesToSend[${rowIndex}][${headerName}] to: ${newValue}`);
       }
     }
