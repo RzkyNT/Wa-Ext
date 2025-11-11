@@ -33,8 +33,7 @@
     /* --- General Styles --- */
     body {
       font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font stack */
-      width: 350px;
-      padding: 20px;
+      width: 450px;
       background-color: var(--color-bg);
       color: var(--color-text);
       line-height: 1.6;
@@ -50,7 +49,9 @@
       font-weight: 700; /* Bolder title */
       text-shadow: 0 0 8px var(--color-glow); /* Subtle glow for title */
     }
-
+    .lampiran {
+      margin-top: 20px;
+    }
     .section {
       margin-bottom: 20px;
       background-color: var(--color-surface);
@@ -184,7 +185,7 @@
       display: block;
     }
     #preview-tab {
-      background-color: var(--color-surface-alt);
+      /* background-color: var(--color-surface-alt); */
       border: 1px solid var(--color-border);
       border-top: none;
       border-radius: 0 0 8px 8px;
@@ -215,8 +216,45 @@
       padding: 1px 4px;
       border-radius: 3px;
     }
-
-
+    #attachment-preview-container {
+      margin-bottom: 5px;
+    }
+    #attachment-preview-container img {
+      background-color: #103E2C;
+      border-radius: 8px;
+      max-width: 100%;
+      border-radius: 8px;
+      margin-bottom: 5px;
+    }
+    .doc-preview {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background-color: rgba(0,0,0,0.2);
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .doc-preview-icon {
+      font-size: 24px;
+      color: var(--color-text-muted);
+    }
+    .doc-preview-name {
+      font-size: 13px;
+      color: var(--color-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .message-preview-style {
+      background-color: #144D37; /* WhatsApp green bubble color */
+      color: var(--color-text);
+      padding: 8px 12px;
+      border-radius: 8px;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+      font-size: 14px;
+      min-height: 60px; /* Ensure it has some height even if empty */
+    }
 
     input[type="radio"] {
       margin-right: 8px;
@@ -425,6 +463,7 @@
 
   </style>
   <link rel="stylesheet" href="libraries/sweetalert2.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
   <h1>WA Sender</h1>
@@ -432,28 +471,7 @@
   <div class="section">
     <div class="section-title">Mode Pengiriman</div>
     <label><input type="radio" name="mode" value="manual" checked> Input Manual</label>
-    <label><input type="radio" name="mode" value="csv"> Impor CSV</label>
-  </div>
-
-  <!-- Template Management Section -->
-  <div class="section" id="template-management-section">
-    <div class="accordion-header" id="template-accordion-header">
-      <div class="section-title">Manajemen Template <span class="accordion-icon">&#9660</span></div>
-    </div>
-    <div class="accordion-content" id="template-accordion-content">
-      <select id="template-select" style="width: 100%; padding: 10px; margin-top: 8px; border: 1px solid var(--color-border); border-radius: 8px; box-sizing: border-box; font-family: 'Inter', sans-serif; font-size: 14px; background-color: var(--color-surface-alt); color: var(--color-text); transition: border-color 0.2s ease, box-shadow 0.2s ease;">
-        <option value="">-- Pilih Template --</option>
-      </select>
-      <input type="text" id="template-name" placeholder="Nama Template" style="margin-top: 10px;">
-      <textarea id="template-content" rows="4" placeholder="Isi Template"></textarea>
-      <div style="display: flex; gap: 10px; margin-top: 10px;">
-        <button id="save-template" style="width: 100%; margin-top: 0;">Simpan Template</button>
-      </div>
-      <div style="display: flex; gap: 10px; margin-top: 10px;">
-        <button id="delete-template" style="width: 50%; margin-top: 0; background-color: #DC3545;">Hapus Template</button>
-        <button id="use-template" style="width: 50%; margin-top: 0; background-color: var(--color-accent);">Gunakan Template</button>
-      </div>
-    </div>
+    <label><input type="radio" name="mode" value="excel-paste"> Copy Paste Data Excel</label>
   </div>
 
   <!-- Manual Input Mode -->
@@ -464,7 +482,24 @@
       <textarea id="manual-numbers" rows="5"></textarea>
     </div>
     <div class="section">
-      <div class="section-title">Pesan</div>
+      <div class="section-title">Pesan & Template</div>
+      
+      <!-- Template Controls -->
+      <div id="template-controls" style="padding-bottom: 15px; border-bottom: 1px solid var(--color-border); margin-bottom: 15px;">
+        <select id="template-select" style="width: 100%; padding: 10px; margin-top: 8px; border: 1px solid var(--color-border); border-radius: 8px; box-sizing: border-box; font-family: 'Inter', sans-serif; font-size: 14px; background-color: var(--color-surface-alt); color: var(--color-text); transition: border-color 0.2s ease, box-shadow 0.2s ease;">
+          <option value="">-- Pilih atau Buat Template Baru --</option>
+        </select>
+        <input type="text" id="template-name" placeholder="Nama Template (wajib untuk simpan)" style="margin-top: 10px;">
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+          <button id="save-template" style="width: 100%; margin-top: 0;">Simpan Pesan sebagai Template</button>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+          <button id="delete-template" style="width: 50%; margin-top: 0; background-color: #DC3545;">Hapus</button>
+          <button id="use-template" style="width: 50%; margin-top: 0; background-color: var(--color-accent);">Gunakan</button>
+        </div>
+      </div>
+
+      <!-- Editor -->
       <div class="editor-tabs">
         <button type="button" class="tab-button active" data-tab="editor">Editor</button>
         <button type="button" class="tab-button" data-tab="preview">Preview</button>
@@ -473,58 +508,69 @@
         <!-- Editor Tab -->
         <div class="tab-content active" id="editor-tab">
           <div class="text-editor-toolbar">
-            <button type="button" class="toolbar-button" data-format="bold" title="Bold"><b>B</b></button>
-            <button type="button" class="toolbar-button" data-format="italic" title="Italic"><i>I</i></button>
-            <button type="button" class="toolbar-button" data-format="strike" title="Strikethrough"><s>S</s></button>
-            <button type="button" class="toolbar-button" data-format="mono" title="Monospace"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 8 3 12 7 16"></polyline><polyline points="17 8 21 12 17 16"></polyline><line x1="14" y1="4" x2="10" y2="20"></line></svg></button>
+            <button type="button" class="toolbar-button" data-format="bold" title="Bold"><i class="fas fa-bold"></i></button>
+            <button type="button" class="toolbar-button" data-format="italic" title="Italic"><i class="fas fa-italic"></i></button>
+            <button type="button" class="toolbar-button" data-format="strike" title="Strikethrough"><i class="fas fa-strikethrough"></i></button>
+            <button type="button" class="toolbar-button" data-format="mono" title="Monospace"><i class="fas fa-code"></i></button>
           </div>
           <textarea id="manual-message" rows="4"></textarea>
         </div>
         <!-- Preview Tab -->
         <div class="tab-content" id="preview-tab">
-          <div id="message-preview"></div>
+          <div id="message-preview">
+            <div id="attachment-preview-container"></div>
+            <div id="text-preview-container"></div>
+          </div>
         </div>
-      </div>
-    </div>
-    <div class="section">
-      <div class="accordion-header" id="image-attachment-accordion-header">
-        <div class="section-title">Lampiran Gambar (Opsional) <span class="accordion-icon">&#9660;</span></div>
-      </div>
-      <div class="accordion-content" id="image-attachment-accordion-content">
-        <input type="file" id="manual-image-attachment" accept="image/*">
-        <div id="image-attachment-display" style="margin-top: 5px; font-size: 13px; color: #4b4b4b; display: flex; align-items: center; justify-content: space-between;">
-          <span id="image-filename"></span>
-          <button id="clear-image-attachment" style="background-color: #f44336; color: white; border: none; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 12px; margin-left: 10px; display: none;">Clear</button>
-        </div>
-      </div>
-    </div>
-    <div class="section">
-      <div class="accordion-header" id="document-attachment-accordion-header">
-        <div class="section-title">Lampiran Dokumen (Opsional) <span class="accordion-icon">&#9660;</span></div>
-      </div>
-      <div class="accordion-content" id="document-attachment-accordion-content">
-        <input type="file" id="manual-document-attachment" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv">
-        <div id="document-attachment-display" style="margin-top: 5px; font-size: 13px; color: #4d4d4d; display: flex; align-items: center; justify-content: space-between;">
-          <span id="document-filename"></span>
-          <button id="clear-document-attachment" style="background-color: #f44336; color: white; border: none; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 12px; margin-left: 10px; display: none;">Clear</button>
-        </div>
-        <p style="font-size: 12px; color: #666; margin-top: 5px;">
-          Catatan: Pengiriman dokumen mungkin tidak selalu berhasil karena batasan keamanan browser.
-        </p>
       </div>
     </div>
   </div>
 
-  <!-- CSV Import Mode -->
-  <div id="csv-mode-container" class="mode-container hidden">
-    <div class="section-title">Impor CSV</div>
-    <div class="section">
-      <div class="section-title">Pilih File CSV</div>
-      <p>Unduh <a href="template.csv" download>template.csv</a>.</p>
-      <input type="file" id="csv-file" accept=".csv">
+  <!-- Excel Paste Mode -->
+  <div id="excel-paste-mode-container" class="mode-container hidden">
+    <div class="section-title">Copy Paste Data Excel</div>
+          <div class="section">
+            <p>Salin tabel dari Excel (Ctrl+C) lalu klik dan paste di bawah (Ctrl+V).</p>
+            <p style="font-size: 13px; color: var(--color-text-muted);"><b>Petunjuk:</b> Kolom pertama untuk <b>Nomor Telepon</b>, kolom kedua dan seterusnya untuk <b>Pesan</b>.</p>
+            <textarea id="excel-paste-textarea" rows="8" placeholder="Contoh:&#10;6281234567890 Pesan untuk nomor pertama&#10;6281234567891 Pesan untuk nomor kedua" readonly style="cursor: text;"></textarea>
+          </div>    <div id="excel-paste-preview-container" class="section hidden" style="margin-top: 15px;">
+      <div class="section-title">Pesan yang Dimuat</div>
+      <ul id="excel-paste-preview-list" style="max-height: 150px; overflow-y: auto; list-style-type: none; padding: 0; font-size: 13px;">
+        <!-- Preview items will be injected here by JS -->
+      </ul>
     </div>
   </div>
 
+  <!-- Global Attachment Sections -->
+  <div class="lampiran">
+  <div class="section">
+    <div class="accordion-header" id="image-attachment-accordion-header">
+      <div class="section-title">Lampiran Gambar (Opsional) <span class="accordion-icon">&#9660;</span></div>
+    </div>
+    <div class="accordion-content" id="image-attachment-accordion-content">
+      <input type="file" id="manual-image-attachment" accept="image/*">
+      <div id="image-attachment-display" style="margin-top: 5px; font-size: 13px; color: #4b4b4b; display: flex; align-items: center; justify-content: space-between;">
+        <span id="image-filename"></span>
+        <button id="clear-image-attachment" style="background-color: #f44336; color: white; border: none; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 12px; margin-left: 10px; display: none;">Clear</button>
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="accordion-header" id="document-attachment-accordion-header">
+      <div class="section-title">Lampiran Dokumen (Opsional) <span class="accordion-icon">&#9660;</span></div>
+    </div>
+    <div class="accordion-content" id="document-attachment-accordion-content">
+      <input type="file" id="manual-document-attachment" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv">
+      <div id="document-attachment-display" style="margin-top: 5px; font-size: 13px; color: #4d4d4d; display: flex; align-items: center; justify-content: space-between;">
+        <span id="document-filename"></span>
+        <button id="clear-document-attachment" style="background-color: #f44336; color: white; border: none; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 12px; margin-left: 10px; display: none;">Clear</button>
+      </div>
+      <p style="font-size: 12px; color: #666; margin-top: 5px;">
+        Catatan: Pengiriman dokumen mungkin tidak selalu berhasil karena batasan keamanan browser.
+      </p>
+    </div>
+  </div>
+  </div>
   <button id="send-messages">Kirim Pesan Massal</button>
   <button id="cancel-sending" class="hidden">Batalkan Kirim</button>
 
