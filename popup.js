@@ -276,20 +276,38 @@ document.addEventListener('DOMContentLoaded', function() {
     tableHtml += '</tr></thead><tbody>';
 
     // Rows (limit to first 5 for preview)
-    data.slice(0, 5).forEach(row => {
+    data.slice(0, 5).forEach((row, rowIndex) => {
       tableHtml += '<tr>';
       headers.forEach(header => {
-        tableHtml += `<td style="border: 1px solid var(--color-border); padding: 8px;">${row[header]}</td>`;
+        tableHtml += `<td contenteditable="true" data-row-index="${rowIndex}" data-header-name="${header}" style="border: 1px solid var(--color-border); padding: 8px;">${row[header]}</td>`;
       });
       tableHtml += '</tr>';
     });
     tableHtml += '</tbody></table>';
     excelDataTableContainer.innerHTML = tableHtml;
+
+    // Add event listener for cell edits
+    excelDataTableContainer.addEventListener('blur', handleCellEdit, true); // Use capture phase for blur event
+  }
+
+  function handleCellEdit(event) {
+    const target = event.target;
+    if (target.tagName === 'TD' && target.contentEditable === 'true') {
+      const rowIndex = parseInt(target.dataset.rowIndex);
+      const headerName = target.dataset.headerName;
+      const newValue = target.textContent;
+
+      if (messagesToSend[rowIndex] && messagesToSend[rowIndex][headerName] !== undefined) {
+        messagesToSend[rowIndex][headerName] = newValue;
+        console.log(`Updated messagesToSend[${rowIndex}][${headerName}] to: ${newValue}`);
+      }
+    }
   }
 
   function clearExcelPreview() {
     excelPreviewContainer.style.display = 'none';
     excelDataTableContainer.innerHTML = '';
+    excelDataTableContainer.removeEventListener('blur', handleCellEdit, true);
   }
 
   function prepareAndSendMessages() {
