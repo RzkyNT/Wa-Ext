@@ -104,7 +104,119 @@
     textarea {
       resize: vertical;
       min-height: 60px;
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+      margin-top: 0;
     }
+
+    .text-editor-toolbar {
+      display: flex;
+      gap: 4px;
+      background-color: var(--color-surface-alt);
+      padding: 6px;
+      border: 1px solid var(--color-border);
+      border-bottom: none;
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+    }
+
+    .toolbar-button {
+      background-color: transparent;
+      color: var(--color-text-muted);
+      border: 1px solid transparent;
+      border-radius: 5px;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      box-shadow: none;
+    }
+
+    .toolbar-button:hover {
+      background-color: var(--color-surface);
+      color: var(--color-text);
+      transform: none;
+      box-shadow: none;
+    }
+
+    .toolbar-button svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .editor-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .tab-button {
+      background: transparent;
+      border: none;
+      padding: 8px 12px;
+      cursor: pointer;
+      color: var(--color-text-muted);
+      font-size: 14px;
+      font-weight: 600;
+      margin: 0;
+      border-radius: 0;
+      width: auto;
+      box-shadow: none;
+      border-bottom: 2px solid transparent;
+    }
+    .tab-button.active {
+      color: var(--color-accent);
+      border-bottom-color: var(--color-accent);
+    }
+    .tab-button:hover {
+      background-color: var(--color-surface-alt);
+      color: var(--color-text);
+      transform: none;
+      box-shadow: none;
+    }
+
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    #preview-tab {
+      background-color: var(--color-surface-alt);
+      border: 1px solid var(--color-border);
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      padding: 10px;
+      min-height: 108px;
+    }
+    #message-preview {
+      background-color: #144D37; /* WhatsApp green bubble color */
+      color: var(--color-text);
+      padding: 8px 12px;
+      border-radius: 8px;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+      font-size: 14px;
+    }
+    #message-preview i {
+      font-style: italic;
+    }
+    #message-preview b {
+      font-weight: bold;
+    }
+    #message-preview s {
+      text-decoration: line-through;
+    }
+    #message-preview tt {
+      font-family: 'Courier New', Courier, monospace;
+      background-color: var(--color-surface);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+
 
     input[type="radio"] {
       margin-right: 8px;
@@ -353,7 +465,26 @@
     </div>
     <div class="section">
       <div class="section-title">Pesan</div>
-      <textarea id="manual-message" rows="4"></textarea>
+      <div class="editor-tabs">
+        <button type="button" class="tab-button active" data-tab="editor">Editor</button>
+        <button type="button" class="tab-button" data-tab="preview">Preview</button>
+      </div>
+      <div class="tab-content-wrapper">
+        <!-- Editor Tab -->
+        <div class="tab-content active" id="editor-tab">
+          <div class="text-editor-toolbar">
+            <button type="button" class="toolbar-button" data-format="bold" title="Bold"><b>B</b></button>
+            <button type="button" class="toolbar-button" data-format="italic" title="Italic"><i>I</i></button>
+            <button type="button" class="toolbar-button" data-format="strike" title="Strikethrough"><s>S</s></button>
+            <button type="button" class="toolbar-button" data-format="mono" title="Monospace"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 8 3 12 7 16"></polyline><polyline points="17 8 21 12 17 16"></polyline><line x1="14" y1="4" x2="10" y2="20"></line></svg></button>
+          </div>
+          <textarea id="manual-message" rows="4"></textarea>
+        </div>
+        <!-- Preview Tab -->
+        <div class="tab-content" id="preview-tab">
+          <div id="message-preview"></div>
+        </div>
+      </div>
     </div>
     <div class="section">
       <div class="accordion-header" id="image-attachment-accordion-header">

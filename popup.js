@@ -520,6 +520,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // --- Initialization ---
   setupEventListeners();
+  setupTextEditor();
+  setupEditorTabs(); // Add this call
   loadPopupState();
   loadTemplates(); // Load templates on popup initialization
   
@@ -550,4 +552,98 @@ document.addEventListener('DOMContentLoaded', function() {
   chrome.runtime.sendMessage({ action: "getSendingResults" }, (results) => {
     displaySendingResults(results);
   });
+
+  // --- Text Editor Logic ---
+  function wrapText(textarea, openTag, closeTag) {
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = textarea.value.substring(start, end);
+    const before = textarea.value.substring(0, start);
+    const after = textarea.value.substring(end);
+
+    if (selectedText) {
+      // If text is selected, wrap it
+      textarea.value = `${before}${openTag}${selectedText}${closeTag}${after}`;
+      // Re-select the wrapped text
+      textarea.selectionStart = start + openTag.length;
+      textarea.selectionEnd = end + openTag.length;
+    } else {
+      // If no text is selected, insert tags and place cursor in between
+      textarea.value = `${before}${openTag}${closeTag}${after}`;
+      textarea.selectionStart = start + openTag.length;
+      textarea.selectionEnd = start + openTag.length;
+    }
+    textarea.focus();
+    // Manually trigger input event to save state and update preview
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  function setupTextEditor() {
+    const toolbarButtons = document.querySelectorAll('.toolbar-button');
+    const messageTextarea = document.getElementById('manual-message');
+
+    toolbarButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        const format = button.dataset.format;
+        let openTag, closeTag;
+
+        switch (format) {
+          case 'bold': openTag = '*'; closeTag = '*'; break;
+          case 'italic': openTag = '_'; closeTag = '_'; break;
+          case 'strike': openTag = '~'; closeTag = '~'; break;
+          case 'mono': openTag = '```'; closeTag = '```'; break;
+        }
+        
+        if (openTag && closeTag) {
+          wrapText(messageTextarea, openTag, closeTag);
+        }
+      });
+    });
+  }
+
+  function updatePreview() {
+    const messageTextarea = document.getElementById('manual-message');
+    const preview = document.getElementById('message-preview');
+    let text = messageTextarea.value;
+
+    // Escape HTML to prevent XSS
+    text = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    // Convert WhatsApp markdown to HTML
+    text = text.replace(/\*(.*?)\*/g, '<b>$1</b>');
+    text = text.replace(/_(.*?)_/g, '<i>$1</i>');
+    text = text.replace(/~(.*?)~/g, '<s>$1</s>');
+    text = text.replace(/```(.*?)```/g, '<tt>$1</tt>');
+    text = text.replace(/\n/g, '<br>');
+
+    preview.innerHTML = text;
+  }
+
+  function setupEditorTabs() {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+    const messageTextarea = document.getElementById('manual-message');
+
+    tabButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        // Deactivate all
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        tabContents.forEach(content => content.classList.remove('active'));
+
+        // Activate clicked
+        button.classList.add('active');
+        const tabId = button.dataset.tab + '-tab';
+        document.getElementById(tabId).classList.add('active');
+
+        // Update preview when switching to it
+        if (button.dataset.tab === 'preview') {
+          updatePreview();
+        }
+      });
+    });
+
+    messageTextarea.addEventListener('input', updatePreview);
+    updatePreview(); // Initial preview
+  }
 });
