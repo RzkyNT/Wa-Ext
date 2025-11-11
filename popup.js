@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // --- Element References ---
   const modeRadios = document.querySelectorAll('input[name="mode"]');
   const manualModeContainer = document.getElementById('manual-mode-container');
-  const excelPasteModeContainer = document.getElementById('excel-paste-mode-container'); // Renamed from csvModeContainer
+  const csvModeContainer = document.getElementById('csv-mode-container');
   const manualNumbersTextarea = document.getElementById('manual-numbers');
   const manualMessageTextarea = document.getElementById('manual-message');
   const manualImageAttachmentInput = document.getElementById('manual-image-attachment');
@@ -11,9 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const clearImageAttachmentButton = document.getElementById('clear-image-attachment');
   const documentFilenameSpan = document.getElementById('document-filename');
   const clearDocumentAttachmentButton = document.getElementById('clear-document-attachment');
-  const excelPasteTextarea = document.getElementById('excel-paste-textarea'); // New
-  const excelPastePreviewContainer = document.getElementById('excel-paste-preview-container'); // New
-  const excelPastePreviewList = document.getElementById('excel-paste-preview-list'); // New
+  const csvFileInput = document.getElementById('csv-file');
   const sendMessagesButton = document.getElementById('send-messages');
   const cancelSendingButton = document.getElementById('cancel-sending');
   const progressContainer = document.getElementById('progress-container');
@@ -30,16 +28,17 @@ document.addEventListener('DOMContentLoaded', function() {
   // --- Template Management Elements ---
   const templateSelect = document.getElementById('template-select');
   const templateNameInput = document.getElementById('template-name');
+  const templateContentTextarea = document.getElementById('template-content');
   const saveTemplateButton = document.getElementById('save-template');
   const deleteTemplateButton = document.getElementById('delete-template');
   const useTemplateButton = document.getElementById('use-template');
-
+  
   // --- Attachment Accordion Elements ---
   const imageAttachmentAccordionHeader = document.getElementById('image-attachment-accordion-header');
   const imageAttachmentAccordionContent = document.getElementById('image-attachment-accordion-content');
   const documentAttachmentAccordionHeader = document.getElementById('document-attachment-accordion-header');
   const documentAttachmentAccordionContent = document.getElementById('document-attachment-accordion-content');
-
+  
   let messagesToSend = [];
   let currentAttachment = null; // This will hold the selected image or document data
 
@@ -182,12 +181,13 @@ document.addEventListener('DOMContentLoaded', function() {
   function handleImageFileSelect(event) {
     const file = event.target.files[0];
     if (file) {
-      clearAttachment('document');
+      clearAttachment('document'); // Clear document attachment if an image is selected
       const reader = new FileReader();
       reader.onload = function(e) {
         currentAttachment = { data: e.target.result, name: file.name, type: file.type, fileType: 'image' };
         chrome.storage.local.set({ currentAttachment: currentAttachment });
         updateAttachmentDisplay();
+        console.log('Image attachment stored:', file.name);
       };
       reader.readAsDataURL(file);
     } else {
@@ -198,12 +198,13 @@ document.addEventListener('DOMContentLoaded', function() {
   function handleDocumentFileSelect(event) {
     const file = event.target.files[0];
     if (file) {
-      clearAttachment('image');
+      clearAttachment('image'); // Clear image attachment if a document is selected
       const reader = new FileReader();
       reader.onload = function(e) {
         currentAttachment = { data: e.target.result, name: file.name, type: file.type, fileType: 'document' };
         chrome.storage.local.set({ currentAttachment: currentAttachment });
         updateAttachmentDisplay();
+        console.log('Document attachment stored:', file.name);
       };
       reader.readAsDataURL(file);
     } else {
@@ -211,54 +212,44 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-
-
-  function parseExcelPaste(excelText) {
-    messagesToSend = []; // Clear previous messages
-    excelPasteTextarea.value = excelText; // Display the pasted text in the textarea
-
-    const lines = excelText.trim().split(/\r?\n/);
-    if (lines.length === 0) {
-      renderExcelPastePreview([]);
-      return;
+  function handleCsvFile(event) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        parseCsv(e.target.result);
+      };
+      reader.readAsText(file);
     }
-
-    // Assuming the first row might be headers, but we'll process all rows as data
-    lines.forEach(line => {
-      const columns = line.split('\t').map(col => col.trim());
-      if (columns.length > 0 && columns[0]) { // Ensure there's at least a number
-        const number = normalizePhoneNumber(columns[0]);
-        const message = columns.slice(1).join(' ').trim(); // Concatenate remaining columns for message
-        messagesToSend.push({ number, message });
-      }
-    });
-
-    if (messagesToSend.length > 0) {
-      Swal.fire('Berhasil!', `${messagesToSend.length} pesan dimuat dari Excel.`, 'success');
-    } else {
-      Swal.fire('Peringatan!', 'Tidak ada data yang valid ditemukan.', 'warning');
-    }
-    renderExcelPastePreview(messagesToSend);
   }
 
-  function renderExcelPastePreview(messages) {
-    if (!excelPastePreviewContainer || !excelPastePreviewList) return;
-
-    if (messages.length === 0) {
-      excelPastePreviewContainer.classList.add('hidden');
-      excelPastePreviewList.innerHTML = '';
+  function parseCsv(csvText) {
+    const lines = csvText.trim().split('\n');
+    if (lines.length === 0) {
+      messagesToSend = [];
       return;
     }
-
-    excelPastePreviewList.innerHTML = messages.map(msg => {
-      const messageContent = msg.message || '<i>(Pesan kosong)</i>';
-      return `<li style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--color-border);">
-                <strong style="color: var(--color-accent-alt);">${msg.number}</strong><br>
-                ${messageContent}
-              </li>`;
-    }).join('');
-
-    excelPastePreviewContainer.classList.remove('hidden');
+    const headers = lines.shift().split(',').map(h => h.trim());
+    messagesToSend = lines.map(line => {
+      const values = line.split(',');
+      const message = {};
+      headers.forEach((header, index) => {
+        message[header] = values[index] ? values[index].trim() : '';
+      });
+      if (message.number) {
+        message.number = normalizePhoneNumber(message.number);
+      }
+      // Note: CSV import does not currently support attachments directly.
+      // Attachments are handled via manual input only.
+      return message;
+    });
+    console.log('Parsed CSV data:', messagesToSend);
+    Swal.fire({
+      icon: 'success',
+      title: 'Berhasil!',
+      text: `${messagesToSend.length} pesan dimuat dari CSV.`,
+      confirmButtonText: 'OK'
+    });
   }
 
   function prepareAndSendMessages() {
@@ -274,15 +265,21 @@ document.addEventListener('DOMContentLoaded', function() {
       messagesToSend = numbers.map(number => ({
         number: normalizePhoneNumber(number),
         message: messageText,
+        // For manual mode, attachment is taken from currentAttachment
         file: currentAttachment ? currentAttachment.name : null
       }));
-    } else if (selectedMode === 'excel-paste') { // New mode
+    } else {
       if (messagesToSend.length === 0) {
-        Swal.fire('Peringatan!', 'Harap paste data Excel terlebih dahulu.', 'warning');
+        Swal.fire({
+          icon: 'warning',
+          title: 'Peringatan!',
+          text: 'Harap impor file CSV.',
+          confirmButtonText: 'OK'
+        });
         return;
       }
-      // For excel-paste mode, attachments are not supported via the paste itself.
-      // If a manual attachment is selected, it will be sent with all pasted messages.
+      // For CSV mode, attachments are not supported via CSV file itself.
+      // If a manual attachment is selected, it will be sent with all CSV messages.
       messagesToSend = messagesToSend.map(msg => ({
         ...msg,
         file: currentAttachment ? currentAttachment.name : null
@@ -293,12 +290,21 @@ document.addEventListener('DOMContentLoaded', function() {
       Swal.fire('Peringatan!', 'Tidak ada pesan untuk dikirim.', 'warning');
       return;
     }
+
+    console.log('Preparing to send messages:', messagesToSend);
     
-    updateProgressUI('Memulai pengiriman...', 0, messagesToSend.length, true);
+    // Initial UI update for sending process
+    updateProgressUI(
+      'Memulai pengiriman...',
+      0,
+      messagesToSend.length,
+      true // isSendingActive
+    );
+
     chrome.runtime.sendMessage({
       action: "sendMessages",
       messages: messagesToSend,
-      attachment: currentAttachment
+      attachment: currentAttachment // Pass the currentAttachment object
     });
   }
 
@@ -307,14 +313,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const modeSelectionSection = document.querySelector('.section:first-of-type');
 
     if (isSendingActive) {
+      document.querySelectorAll('.section').forEach(el => el.classList.add('hidden')); 
       allSections.forEach(el => el.classList.add('hidden'));
       manualModeContainer.classList.add('hidden');
-      excelPasteModeContainer.classList.add('hidden'); // Updated
-      
       sendMessagesButton.classList.add('hidden');
       progressContainer.classList.remove('hidden');
       cancelSendingButton.classList.remove('hidden');
-      resultsContainer.classList.add('hidden');
+      resultsContainer.classList.add('hidden'); // Hide results when sending starts
       
       progressText.textContent = `Mengirim ${currentIndex} dari ${totalMessages} pesan...`;
       progressBar.style.width = `${(currentIndex / totalMessages) * 100}%`;
@@ -325,11 +330,12 @@ document.addEventListener('DOMContentLoaded', function() {
       // Explicitly re-apply the correct mode visibility
       const selectedMode = document.querySelector('input[name="mode"]:checked').value;
       manualModeContainer.classList.toggle('hidden', selectedMode !== 'manual');
-      excelPasteModeContainer.classList.toggle('hidden', selectedMode !== 'excel-paste'); // Updated
+      csvModeContainer.classList.toggle('hidden', selectedMode !== 'csv'); // Updated
 
       sendMessagesButton.classList.remove('hidden');
       progressContainer.classList.add('hidden');
       cancelSendingButton.classList.add('hidden');
+      // Show results if there are any
       chrome.runtime.sendMessage({ action: "getSendingResults" }, (results) => {
         displaySendingResults(results);
       });
@@ -337,23 +343,37 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function displaySendingResults(results) {
+    successfulList.innerHTML = '';
+    failedList.innerHTML = '';
+
     if (!results || (results.success.length === 0 && results.failed.length === 0)) {
       resultsContainer.classList.add('hidden');
       return;
     }
+
     resultsContainer.classList.remove('hidden');
     successfulCount.textContent = results.success.length;
     failedCount.textContent = results.failed.length;
-    successfulList.innerHTML = results.success.map(item => `<li>${item.number}</li>`).join('');
-    failedList.innerHTML = results.failed.map(item => `<li>${item.number} - Error: ${item.error || 'Unknown'}</li>`).join('');
+
+    results.success.forEach(item => {
+      const li = document.createElement('li');
+      li.textContent = `${item.number}`;
+      successfulList.appendChild(li);
+    });
+
+    results.failed.forEach(item => {
+      const li = document.createElement('li');
+      li.textContent = `${item.number} - Error: ${item.error || 'Unknown'}`;
+      failedList.appendChild(li);
+    });
   }
 
   // --- Persistence Logic ---
+
   function savePopupState() {
     const state = {
       manualNumbers: manualNumbersTextarea.value,
       manualMessage: manualMessageTextarea.value,
-      excelPasteText: excelPasteTextarea.value, // Save pasted text
       selectedMode: document.querySelector('input[name="mode"]:checked').value
     };
     chrome.storage.local.set({ popupState: state });
@@ -365,10 +385,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const state = result.popupState;
         manualNumbersTextarea.value = state.manualNumbers || '';
         manualMessageTextarea.value = state.manualMessage || '';
-        excelPasteTextarea.value = state.excelPasteText || ''; // Load pasted text
         
         const selectedMode = state.selectedMode || 'manual';
         document.querySelector(`input[name="mode"][value="${selectedMode}"]`).checked = true;
+        
         document.querySelector(`input[name="mode"][value="${selectedMode}"]`).dispatchEvent(new Event('change'));
       }
       if (result.currentAttachment) {
@@ -376,47 +396,41 @@ document.addEventListener('DOMContentLoaded', function() {
         updateAttachmentDisplay();
       }
       updatePreview(); // Initial preview update
-      // If excel-paste mode is selected, re-parse and render preview
-      if (document.querySelector('input[name="mode"]:checked').value === 'excel-paste' && excelPasteTextarea.value) {
-        parseExcelPaste(excelPasteTextarea.value);
-      }
     });
   }
 
   function setupEventListeners() {
     modeRadios.forEach(radio => radio.addEventListener('change', () => {
       manualModeContainer.classList.toggle('hidden', radio.value !== 'manual');
-      excelPasteModeContainer.classList.toggle('hidden', radio.value !== 'excel-paste'); // Updated
-      savePopupState();
+      csvModeContainer.classList.toggle('hidden', radio.value !== 'csv');
+      templateManagementSection.classList.toggle('hidden', radio.value === 'csv'); // Hide template section in CSV mode
+      savePopupState(); // Save state when mode changes
     }));
 
     manualImageAttachmentInput.addEventListener('change', handleImageFileSelect);
     clearImageAttachmentButton.addEventListener('click', () => clearAttachment('image'));
     manualDocumentAttachmentInput.addEventListener('change', handleDocumentFileSelect);
     clearDocumentAttachmentButton.addEventListener('click', () => clearAttachment('document'));
-    
-    excelPasteTextarea.addEventListener('paste', (e) => { // New paste listener
-      e.preventDefault();
-      const clipboardData = e.clipboardData || window.clipboardData;
-      const text = clipboardData.getData('text/plain');
-      parseExcelPaste(text);
-      savePopupState(); // Save state after paste
-    });
+    csvFileInput.addEventListener('change', handleCsvFile);
     sendMessagesButton.addEventListener('click', prepareAndSendMessages);
     cancelSendingButton.addEventListener('click', () => {
       chrome.runtime.sendMessage({ action: "cancelSending" });
+      currentStatus.textContent = 'Pengiriman dibatalkan.'; // Immediate feedback
+      updateProgressUI('Pengiriman dibatalkan.', 0, 0, false); // Hide progress UI
     });
     clearResultsBtn.addEventListener('click', () => {
       chrome.runtime.sendMessage({ action: "clearSendingResults" }, (response) => {
         if (response && response.status === "cleared") {
-          displaySendingResults({ success: [], failed: [] });
+          displaySendingResults({ success: [], failed: [] }); // Clear UI
         }
       });
     });
 
+    // Add listeners to save state on input
     manualNumbersTextarea.addEventListener('input', savePopupState);
     manualMessageTextarea.addEventListener('input', savePopupState);
 
+    // --- Template Management Event Listeners ---
     saveTemplateButton.addEventListener('click', saveTemplate);
     deleteTemplateButton.addEventListener('click', deleteTemplate);
     useTemplateButton.addEventListener('click', useTemplate);
@@ -446,6 +460,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    console.log("Popup received message:", request); // Added logging
     if (request.action === "updateProgress") {
       updateProgressUI(request.status, request.currentIndex + 1, request.totalMessages, request.isSendingActive);
     }
@@ -540,8 +555,8 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById(tabId).classList.add('active');
         if (button.dataset.tab === 'preview') {
           updatePreview();
-        }
-      });
+    }
+  });
     });
     manualMessageTextarea.addEventListener('input', updatePreview);
   }
@@ -551,7 +566,7 @@ document.addEventListener('DOMContentLoaded', function() {
   setupTextEditor();
   setupEditorTabs();
   loadPopupState();
-  loadTemplates();
+  loadTemplates(); // Load templates on popup initialization
   
   // Set initial state of accordions to collapsed
   imageAttachmentAccordionContent.classList.add('collapsed');
@@ -559,11 +574,19 @@ document.addEventListener('DOMContentLoaded', function() {
   
   chrome.runtime.sendMessage({ action: "getSendingStatus" }, (response) => {
     if (response) {
-      updateProgressUI(response.status, response.currentIndex + (response.isSendingActive ? 1 : 0), response.totalMessages, response.isSendingActive);
+      updateProgressUI(
+        response.status,
+        response.currentIndex + (response.isSendingActive ? 1 : 0), // +1 for 1-based indexing if active
+        response.totalMessages,
+        response.isSendingActive
+      );
     } else {
+      // If no active sending process, ensure UI is clean
       updateProgressUI('', 0, 0, false);
     }
   });
+
+  // Request and display sending results on load
   chrome.runtime.sendMessage({ action: "getSendingResults" }, (results) => {
     displaySendingResults(results);
   });

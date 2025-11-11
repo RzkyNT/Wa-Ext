@@ -434,136 +434,6 @@
   background: var(--color-accent-alt);  /* warna aksen saat dihover */
 }
 
-    .accordion-header {
-      cursor: pointer;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--color-border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .accordion-header:hover {
-      background-color: var(--color-surface-alt);
-      border-radius: 8px;
-    }
-    .accordion-icon {
-      transition: transform 0.3s ease;
-    }
-    .accordion-header.collapsed .accordion-icon {
-      transform: rotate(-90deg);
-    }
-    .accordion-content {
-      max-height: 500px; /* Arbitrary max-height for transition */
-      overflow: hidden;
-      transition: max-height 0.3s ease-out;
-    }
-    .accordion-content.collapsed {
-      max-height: 0;
-    }
-
-    
-    /* AI Toggle Switch Styles */
-    .switch {
-      position: relative;
-      display: inline-block;
-      background-color: #b3b3b3;
-      border-radius: 34px;
-      width: 50px;
-      height: 28px;
-    }
-    .switch input { 
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: var(--color-link);
-      transition: .4s;
-    }
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 20px;
-      width: 20px;
-      left: 4px;
-      bottom: 4px;
-      background-color: white;
-      transition: .4s;
-    }
-    input:checked + .slider {
-      background-color: var(--color-accent);
-    }
-    input:focus + .slider {
-      box-shadow: 0 0 1px var(--color-accent);
-    }
-    input:checked + .slider:before {
-      transform: translateX(22px);
-    }
-    .slider.round {
-      border-radius: 34px;
-    }
-    .slider.round:before {
-      border-radius: 50%;
-    }
-
-    .section {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .section-title {
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-
-    .mode-option {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: 0.2s ease;
-      background: var(--color-surface-alt, #11161C);
-      color: var(--color-text);
-    }
-
-    /* Sembunyikan radio tapi tetap fungsional */
-    .mode-option input[type="radio"] {
-      display: none;
-    }
-
-    .mode-option i {
-      font-size: 18px;
-      color: var(--color-text-muted, #aaa);
-      transition: color 0.2s ease;
-    }
-
-    .mode-option span {
-      flex: 1;
-    }
-
-    /* Hover effect */
-    .mode-option:hover {
-      background: var(--color-surface, #0B0F14);
-    }
-
-    /* Saat radio dipilih */
-    .mode-option input[type="radio"]:checked + i {
-      color: var(--color-link);
-    }
-
-    .mode-option input[type="radio"]:checked ~ span {
-      font-weight: 600;
-      color: var(--color-link);
-    }
   </style>
   <link rel="stylesheet" href="libraries/sweetalert2.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
@@ -576,14 +446,12 @@
 
     <label class="mode-option">
       <input type="radio" name="mode" value="manual" checked>
-      <i class="fas fa-keyboard"></i>
       <span>Input Manual</span>
     </label>
 
     <label class="mode-option">
-      <input type="radio" name="mode" value="excel-paste">
-      <i class="fas fa-file-excel"></i>
-      <span>Copy Paste Data Excel</span>
+      <input type="radio" name="mode" value="csv">
+      <span>Import Data CSV</span>
     </label>
   </div>
 
@@ -626,8 +494,8 @@
             <button type="button" class="toolbar-button" data-format="strike" title="Strikethrough"><i class="fas fa-strikethrough"></i></button>
             <button type="button" class="toolbar-button" data-format="mono" title="Monospace"><i class="fas fa-code"></i></button>
           </div>
-          <textarea id="manual-message" rows="4"></textarea>
-        </div>
+      <textarea id="manual-message" rows="4"></textarea>
+    </div>
         <!-- Preview Tab -->
         <div class="tab-content" id="preview-tab">
           <div id="message-preview">
@@ -639,36 +507,21 @@
     </div>
   </div>
 
-  <!-- Excel Paste Mode -->
-  <div id="excel-paste-mode-container" class="mode-container hidden">
-    <div class="section-title">Copy Paste Data Excel</div>
-          <div class="section">
-            <p>Salin tabel dari Excel (Ctrl+C) lalu klik dan paste di bawah (Ctrl+V).</p>
-            <p style="font-size: 13px; color: var(--color-text-muted);"><b>Petunjuk:</b> Kolom pertama untuk <b>Nomor Telepon</b>, kolom kedua dan seterusnya untuk <b>Pesan</b>.</p>
-            <textarea id="excel-paste-textarea" rows="8" placeholder="Contoh:&#10;6281234567890 Pesan untuk nomor pertama&#10;6281234567891 Pesan untuk nomor kedua" readonly style="cursor: text;"></textarea>
-          </div>    <div id="excel-paste-preview-container" class="section hidden" style="margin-top: 15px;">
-      <div class="section-title">Pesan yang Dimuat</div>
-      <ul id="excel-paste-preview-list" style="max-height: 150px; overflow-y: auto; list-style-type: none; padding: 0; font-size: 13px;">
-        <!-- Preview items will be injected here by JS -->
-      </ul>
-    </div>
-  </div>
-
-  <!-- Global Attachment Sections -->
+    <!-- Global Attachment Sections -->
   <div class="lampiran">
   <div class="section">
     <div class="accordion-header" id="image-attachment-accordion-header">
       <div class="section-title">Lampiran Gambar (Opsional) <span class="accordion-icon">&#9660;</span></div>
     </div>
-    <div class="accordion-content" id="image-attachment-accordion-content">
-      <input type="file" id="manual-image-attachment" accept="image/*">
+    <div class="accordion-content" id="image-attachment-accordion-content">    
+  <input type="file" id="manual-image-attachment" accept="image/*">
       <div id="image-attachment-display" style="margin-top: 5px; font-size: 13px; color: #4b4b4b; display: flex; align-items: center; justify-content: space-between;">
         <span id="image-filename"></span>
         <button id="clear-image-attachment" style="background-color: #f44336; color: white; border: none; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 12px; margin-left: 10px; display: none;">Clear</button>
       </div>
+      </div>
     </div>
-  </div>
-  <div class="section">
+    <div class="section">
     <div class="accordion-header" id="document-attachment-accordion-header">
       <div class="section-title">Lampiran Dokumen (Opsional) <span class="accordion-icon">&#9660;</span></div>
     </div>
@@ -683,7 +536,17 @@
       </p>
     </div>
   </div>
+
+  <!-- CSV Import Mode -->
+  <div id="csv-mode-container" class="mode-container hidden">
+    <div class="section-title">Impor CSV</div>
+    <div class="section">
+      <div class="section-title">Pilih File CSV</div>
+      <p>Unduh <a href="template.csv" download>template.csv</a>.</p>
+      <input type="file" id="csv-file" accept=".csv">
+    </div>
   </div>
+
   <button id="send-messages">Kirim Pesan Massal</button>
   <button id="cancel-sending" class="hidden">Batalkan Kirim</button>
 
