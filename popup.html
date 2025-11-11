@@ -450,8 +450,8 @@
     </label>
 
     <label class="mode-option">
-      <input type="radio" name="mode" value="csv">
-      <span>Import Data CSV</span>
+      <input type="radio" name="mode" value="excel">
+      <span>Import Data Excel</span>
     </label>
   </div>
 
@@ -508,6 +508,23 @@
   </div>
 
     <!-- Global Attachment Sections -->
+    
+    <!-- EXCEL Import Mode -->
+    <div id="excel-mode-container" class="mode-container hidden">
+      <div class="section-title">Impor Excel</div>
+      <div class="section">
+        <div class="section-title">Pilih File Excel</div>
+      <p>Unduh <a href="template.xlsx" download>template.xlsx</a>.</p>
+      <input type="file" id="excel-file" accept=".xls,.xlsx">
+      <div id="excel-preview-container" class="section" style="margin-top: 20px; display: none;">
+        <div class="section-title">Pratinjau Data Excel</div>
+        <div id="excel-data-table-container" style="max-height: 200px; overflow-y: auto;">
+          <!-- Excel data table will be inserted here -->
+        </div>
+      </div>
+    </div>
+  </div>
+  
   <div class="lampiran">
   <div class="section">
     <div class="accordion-header" id="image-attachment-accordion-header">
@@ -536,17 +553,6 @@
       </p>
     </div>
   </div>
-
-  <!-- CSV Import Mode -->
-  <div id="csv-mode-container" class="mode-container hidden">
-    <div class="section-title">Impor CSV</div>
-    <div class="section">
-      <div class="section-title">Pilih File CSV</div>
-      <p>Unduh <a href="template.csv" download>template.csv</a>.</p>
-      <input type="file" id="csv-file" accept=".csv">
-    </div>
-  </div>
-
   <button id="send-messages">Kirim Pesan Massal</button>
   <button id="cancel-sending" class="hidden">Batalkan Kirim</button>
 
@@ -576,6 +582,7 @@
   </div>
 
   <script src="libraries/sweetalert2.all.min.js"></script>
+  <script src="libraries/xlsx.full.min.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

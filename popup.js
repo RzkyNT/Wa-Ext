@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // --- Element References ---
   const modeRadios = document.querySelectorAll('input[name="mode"]');
   const manualModeContainer = document.getElementById('manual-mode-container');
-  const csvModeContainer = document.getElementById('csv-mode-container');
+  const excelModeContainer = document.getElementById('excel-mode-container');
   const manualNumbersTextarea = document.getElementById('manual-numbers');
   const manualMessageTextarea = document.getElementById('manual-message');
   const manualImageAttachmentInput = document.getElementById('manual-image-attachment');
@@ -11,7 +11,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const clearImageAttachmentButton = document.getElementById('clear-image-attachment');
   const documentFilenameSpan = document.getElementById('document-filename');
   const clearDocumentAttachmentButton = document.getElementById('clear-document-attachment');
-  const csvFileInput = document.getElementById('csv-file');
+  const excelFileInput = document.getElementById('excel-file');
+  const excelPreviewContainer = document.getElementById('excel-preview-container');
+  const excelDataTableContainer = document.getElementById('excel-data-table-container');
   const sendMessagesButton = document.getElementById('send-messages');
   const cancelSendingButton = document.getElementById('cancel-sending');
   const progressContainer = document.getElementById('progress-container');
@@ -212,44 +214,82 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  function handleCsvFile(event) {
+  function handleExcelFile(event) {
     const file = event.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = function(e) {
-        parseCsv(e.target.result);
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Get data as array of arrays
+        parseExcelData(json);
       };
-      reader.readAsText(file);
+      reader.readAsArrayBuffer(file);
     }
   }
 
-  function parseCsv(csvText) {
-    const lines = csvText.trim().split('\n');
-    if (lines.length === 0) {
+  function parseExcelData(excelData) {
+    if (excelData.length === 0) {
       messagesToSend = [];
       return;
     }
-    const headers = lines.shift().split(',').map(h => h.trim());
-    messagesToSend = lines.map(line => {
-      const values = line.split(',');
+    const headers = excelData[0].map(h => h.trim());
+    const dataRows = excelData.slice(1);
+
+    messagesToSend = dataRows.map(row => {
       const message = {};
       headers.forEach((header, index) => {
-        message[header] = values[index] ? values[index].trim() : '';
+        message[header] = row[index] ? String(row[index]).trim() : '';
       });
       if (message.number) {
         message.number = normalizePhoneNumber(message.number);
       }
-      // Note: CSV import does not currently support attachments directly.
-      // Attachments are handled via manual input only.
       return message;
     });
-    console.log('Parsed CSV data:', messagesToSend);
+    console.log('Parsed Excel data:', messagesToSend);
     Swal.fire({
       icon: 'success',
       title: 'Berhasil!',
-      text: `${messagesToSend.length} pesan dimuat dari CSV.`,
+      text: `${messagesToSend.length} pesan dimuat dari Excel.`,
       confirmButtonText: 'OK'
     });
+    displayExcelPreview(messagesToSend);
+  }
+
+  function displayExcelPreview(data) {
+    if (data.length === 0) {
+      excelPreviewContainer.style.display = 'none';
+      excelDataTableContainer.innerHTML = '';
+      return;
+    }
+
+    excelPreviewContainer.style.display = 'block';
+    let tableHtml = '<table style="width:100%; border-collapse: collapse;"><thead><tr>';
+
+    // Headers
+    const headers = Object.keys(data[0]);
+    headers.forEach(header => {
+      tableHtml += `<th style="border: 1px solid var(--color-border); padding: 8px; text-align: left; background-color: var(--color-surface-alt);">${header}</th>`;
+    });
+    tableHtml += '</tr></thead><tbody>';
+
+    // Rows (limit to first 5 for preview)
+    data.slice(0, 5).forEach(row => {
+      tableHtml += '<tr>';
+      headers.forEach(header => {
+        tableHtml += `<td style="border: 1px solid var(--color-border); padding: 8px;">${row[header]}</td>`;
+      });
+      tableHtml += '</tr>';
+    });
+    tableHtml += '</tbody></table>';
+    excelDataTableContainer.innerHTML = tableHtml;
+  }
+
+  function clearExcelPreview() {
+    excelPreviewContainer.style.display = 'none';
+    excelDataTableContainer.innerHTML = '';
   }
 
   function prepareAndSendMessages() {
@@ -268,22 +308,23 @@ document.addEventListener('DOMContentLoaded', function() {
         // For manual mode, attachment is taken from currentAttachment
         file: currentAttachment ? currentAttachment.name : null
       }));
-    } else {
+    } else if (selectedMode === 'excel') {
       if (messagesToSend.length === 0) {
         Swal.fire({
           icon: 'warning',
           title: 'Peringatan!',
-          text: 'Harap impor file CSV.',
+          text: 'Harap impor file Excel.',
           confirmButtonText: 'OK'
         });
         return;
       }
-      // For CSV mode, attachments are not supported via CSV file itself.
-      // If a manual attachment is selected, it will be sent with all CSV messages.
       messagesToSend = messagesToSend.map(msg => ({
         ...msg,
         file: currentAttachment ? currentAttachment.name : null
       }));
+    } else {
+      // This 'else' block was missing its closing brace.
+      // The code below was incorrectly outside of it.
     }
 
     if (messagesToSend.length === 0) {
@@ -330,7 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // Explicitly re-apply the correct mode visibility
       const selectedMode = document.querySelector('input[name="mode"]:checked').value;
       manualModeContainer.classList.toggle('hidden', selectedMode !== 'manual');
-      csvModeContainer.classList.toggle('hidden', selectedMode !== 'csv'); // Updated
+      excelModeContainer.classList.toggle('hidden', selectedMode !== 'excel');
 
       sendMessagesButton.classList.remove('hidden');
       progressContainer.classList.add('hidden');
@@ -402,8 +443,11 @@ document.addEventListener('DOMContentLoaded', function() {
   function setupEventListeners() {
     modeRadios.forEach(radio => radio.addEventListener('change', () => {
       manualModeContainer.classList.toggle('hidden', radio.value !== 'manual');
-      csvModeContainer.classList.toggle('hidden', radio.value !== 'csv');
-      templateManagementSection.classList.toggle('hidden', radio.value === 'csv'); // Hide template section in CSV mode
+      excelModeContainer.classList.toggle('hidden', radio.value !== 'excel');
+      templateManagementSection.classList.toggle('hidden', radio.value === 'excel');
+      if (radio.value !== 'excel') {
+        clearExcelPreview();
+      }
       savePopupState(); // Save state when mode changes
     }));
 
@@ -411,7 +455,12 @@ document.addEventListener('DOMContentLoaded', function() {
     clearImageAttachmentButton.addEventListener('click', () => clearAttachment('image'));
     manualDocumentAttachmentInput.addEventListener('change', handleDocumentFileSelect);
     clearDocumentAttachmentButton.addEventListener('click', () => clearAttachment('document'));
-    csvFileInput.addEventListener('change', handleCsvFile);
+    excelFileInput.addEventListener('change', (event) => {
+      handleExcelFile(event);
+      if (!event.target.files[0]) { // If file is cleared
+        clearExcelPreview();
+      }
+    });
     sendMessagesButton.addEventListener('click', prepareAndSendMessages);
     cancelSendingButton.addEventListener('click', () => {
       chrome.runtime.sendMessage({ action: "cancelSending" });
@@ -527,10 +576,19 @@ document.addEventListener('DOMContentLoaded', function() {
       } else if (currentAttachment.fileType === 'document') {
         const docPreview = document.createElement('div');
         docPreview.className = 'doc-preview';
-        docPreview.innerHTML = `<div class="doc-preview-icon">📄</div><div class="doc-preview-name">${currentAttachment.name}</div>`;
+
+        // Gunakan ikon Font Awesome
+        docPreview.innerHTML = `
+          <div class="doc-preview-icon">
+            <i class="fas fa-file"></i>
+          </div>
+          <div class="doc-preview-name">${currentAttachment.name}</div>
+        `;
+
         attachmentContainer.appendChild(docPreview);
       }
     }
+
 
     // Render text preview
     text = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
