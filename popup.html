@@ -18,7 +18,7 @@
       --color-text-inverse: #0B0D11; /* Dark text for white buttons */
 
       /* Accent Colors */
-      --color-accent: #144D37;
+      --color-accent: #25D366; /* Electric cyan */
       --color-accent-alt: #2BE07B; /* Soft neon green */
       --color-link: #1DA851; /* Slightly darker cyan for links */
       --color-glow: rgba(0, 255, 34, 0.3); /* Light glow effect */
@@ -50,7 +50,7 @@
       text-shadow: 0 0 8px var(--color-glow); /* Subtle glow for title */
     }
     .lampiran {
-      margin-top: 20px !important;
+      margin-top: 20px;
     }
     .section {
       margin-bottom: 20px;
@@ -83,7 +83,7 @@
       display: none;
     }
 
-    input[type="text"], input[type="file"], textarea, input[type="password"] {
+    input[type="text"], input[type="file"], textarea {
       width: 100%;
       padding: 10px;
       margin-top: 8px;
@@ -96,7 +96,7 @@
       color: var(--color-text);
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
-    input[type="text"]:focus, textarea:focus, input[type="password"]:focus {
+    input[type="text"]:focus, textarea:focus {
       border-color: var(--color-accent);
       box-shadow: 0 0 0 2px rgba(0, 255, 64, 0.2);
       outline: none;
@@ -239,7 +239,7 @@
       color: var(--color-text-muted);
     }
     .doc-preview-name {
-      font-size: 2em;
+      font-size: 13px;
       color: var(--color-text);
       white-space: nowrap;
       overflow: hidden;
@@ -285,7 +285,6 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.3);
       font-weight: 600;
     }
-    
     button:hover {
       background-color: #f0f0f0; /* Slightly darker white on hover */
       transform: translateY(-2px);
@@ -462,6 +461,7 @@
       max-height: 0;
     }
 
+    
     /* AI Toggle Switch Styles */
     .switch {
       position: relative;
@@ -564,7 +564,6 @@
       font-weight: 600;
       color: var(--color-link);
     }
-
   </style>
   <link rel="stylesheet" href="libraries/sweetalert2.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
@@ -573,20 +572,20 @@
   <h1>WA Sender</h1>
 
   <div class="section">
-  <div class="section-title">Tab</div>
+    <div class="section-title">Mode Pengiriman</div>
 
-  <label class="mode-option">
-    <input type="radio" name="mode" value="manual" checked>
-    <i class="fas fa-keyboard"></i>
-    <span>Input Manual</span>
-  </label>
+    <label class="mode-option">
+      <input type="radio" name="mode" value="manual" checked>
+      <i class="fas fa-keyboard"></i>
+      <span>Input Manual</span>
+    </label>
 
-  <label class="mode-option">
-    <input type="radio" name="mode" value="excel-paste">
-    <i class="fas fa-table"></i>
-    <span>Copy Paste Data Excel</span>
-  </label>
-</div>
+    <label class="mode-option">
+      <input type="radio" name="mode" value="excel-paste">
+      <i class="fas fa-file-excel"></i>
+      <span>Copy Paste Data Excel</span>
+    </label>
+  </div>
 
   <!-- Manual Input Mode -->
   <div id="manual-mode-container" class="mode-container">
@@ -655,38 +654,36 @@
     </div>
   </div>
 
-    <!-- Global Attachment Sections (Moved here to be always visible) -->
-    <div class="lampiran">
-    <div class="section">
-      <div class="accordion-header" id="image-attachment-accordion-header">
-        <div class="section-title">Lampiran Gambar (Opsional) <span class="accordion-icon">&#9660;</span></div>
-      </div>
-      <div class="accordion-content" id="image-attachment-accordion-content">
-        <input type="file" id="manual-image-attachment" accept="image/*">
-        <div id="image-attachment-display" style="margin-top: 5px; font-size: 13px; color: #4b4b4b; display: flex; align-items: center; justify-content: space-between;">
-          <span id="image-filename"></span>
-          <button id="clear-image-attachment" style="background-color: #f44336; color: white; border: none; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 12px; margin-left: 10px; display: none;">Clear</button>
-        </div>
+  <!-- Global Attachment Sections -->
+  <div class="lampiran">
+  <div class="section">
+    <div class="accordion-header" id="image-attachment-accordion-header">
+      <div class="section-title">Lampiran Gambar (Opsional) <span class="accordion-icon">&#9660;</span></div>
+    </div>
+    <div class="accordion-content" id="image-attachment-accordion-content">
+      <input type="file" id="manual-image-attachment" accept="image/*">
+      <div id="image-attachment-display" style="margin-top: 5px; font-size: 13px; color: #4b4b4b; display: flex; align-items: center; justify-content: space-between;">
+        <span id="image-filename"></span>
+        <button id="clear-image-attachment" style="background-color: #f44336; color: white; border: none; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 12px; margin-left: 10px; display: none;">Clear</button>
       </div>
     </div>
-    <div class="section">
-      <div class="accordion-header" id="document-attachment-accordion-header">
-        <div class="section-title">Lampiran Dokumen (Opsional) <span class="accordion-icon">&#9660;</span></div>
-      </div>
-      <div class="accordion-content" id="document-attachment-accordion-content">
-        <input type="file" id="manual-document-attachment" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv">
-        <div id="document-attachment-display" style="margin-top: 5px; font-size: 13px; color: #4d4d4d; display: flex; align-items: center; justify-content: space-between;">
-          <span id="document-filename"></span>
-          <button id="clear-document-attachment" style="background-color: #f44336; color: white; border: none; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 12px; margin-left: 10px; display: none;">Clear</button>
-        </div>
-        <p style="font-size: 12px; color: #666; margin-top: 5px;">
-          Catatan: Pengiriman dokumen mungkin tidak selalu berhasil karena batasan keamanan browser.
-        </p>
-      </div>
+  </div>
+  <div class="section">
+    <div class="accordion-header" id="document-attachment-accordion-header">
+      <div class="section-title">Lampiran Dokumen (Opsional) <span class="accordion-icon">&#9660;</span></div>
     </div>
+    <div class="accordion-content" id="document-attachment-accordion-content">
+      <input type="file" id="manual-document-attachment" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv">
+      <div id="document-attachment-display" style="margin-top: 5px; font-size: 13px; color: #4d4d4d; display: flex; align-items: center; justify-content: space-between;">
+        <span id="document-filename"></span>
+        <button id="clear-document-attachment" style="background-color: #f44336; color: white; border: none; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 12px; margin-left: 10px; display: none;">Clear</button>
+      </div>
+      <p style="font-size: 12px; color: #666; margin-top: 5px;">
+        Catatan: Pengiriman dokumen mungkin tidak selalu berhasil karena batasan keamanan browser.
+      </p>
     </div>
-
-    
+  </div>
+  </div>
   <button id="send-messages">Kirim Pesan Massal</button>
   <button id="cancel-sending" class="hidden">Batalkan Kirim</button>
 
