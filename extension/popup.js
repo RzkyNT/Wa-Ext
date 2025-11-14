@@ -553,22 +553,170 @@ document.addEventListener('DOMContentLoaded', function() {
     const before = textarea.value.substring(0, start);
     const after = textarea.value.substring(end);
 
-    if (selectedText) {
-      textarea.value = `${before}${openTag}${selectedText}${closeTag}${after}`;
-      textarea.selectionStart = start + openTag.length;
-      textarea.selectionEnd = end + openTag.length;
-    } else {
-      textarea.value = `${before}${openTag}${closeTag}${after}`;
-      textarea.selectionStart = start + openTag.length;
-      textarea.selectionEnd = start + openTag.length;
+    // UNWRAP LOGIC
+    if (before.endsWith(openTag) && after.startsWith(closeTag)) {
+        const newBefore = before.substring(0, before.length - openTag.length);
+        const newAfter = after.substring(closeTag.length);
+        textarea.value = newBefore + selectedText + newAfter;
+        textarea.selectionStart = start - openTag.length;
+        textarea.selectionEnd = end - openTag.length;
+        textarea.focus();
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        return;
     }
+    if (selectedText.startsWith(openTag) && selectedText.endsWith(closeTag)) {
+        const unwrapped = selectedText.substring(openTag.length, selectedText.length - closeTag.length);
+        textarea.value = before + unwrapped + after;
+        textarea.selectionStart = start;
+        textarea.selectionEnd = end - openTag.length - closeTag.length;
+        textarea.focus();
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        return;
+    }
+
+    // WRAP LOGIC
+    const leadingSpaces = selectedText.match(/^\s*/)[0];
+    const trailingSpaces = selectedText.match(/\s*$/)[0];
+    const textToWrap = selectedText.substring(leadingSpaces.length, selectedText.length - trailingSpaces.length);
+
+    if (textToWrap.length === 0) return;
+
+    const beforeWrap = before + leadingSpaces;
+    const afterWrap = trailingSpaces + after;
+
+    let open = openTag;
+    let close = closeTag;
+    
+    if (beforeWrap.length > 0 && !/\s$/.test(beforeWrap)) {
+        open = ' ' + open;
+    }
+    
+    if (afterWrap.length > 0 && !/^\s/.test(afterWrap)) {
+        close = close + ' ';
+    }
+
+    textarea.value = beforeWrap + open + textToWrap + close + afterWrap;
+    textarea.selectionStart = beforeWrap.length + open.length;
+    textarea.selectionEnd = beforeWrap.length + open.length + textToWrap.length;
+    
     textarea.focus();
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+  function prefixLines(textarea, prefix, isNumbered = false) {
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    
+    // Find the start and end of the selected lines
+    const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+    const lineEnd = text.indexOf('\n', end);
+    const selectionEnd = lineEnd === -1 ? text.length : lineEnd;
+    
+    const selectedLinesText = text.substring(lineStart, selectionEnd);
+    const lines = selectedLinesText.split('\n');
+    
+    let isFormatted;
+    if (isNumbered) {
+      isFormatted = lines.every(line => /^[0-9]+\.\s/.test(line) || line.trim() === '');
+    } else {
+      isFormatted = lines.every(line => line.startsWith(prefix) || line.trim() === '');
+    }
+
+    let newLines;
+    if (isFormatted) {
+      // Remove formatting
+      newLines = lines.map(line => {
+        if (isNumbered) return line.replace(/^[0-9]+\.\s/, '');
+        return line.startsWith(prefix) ? line.substring(prefix.length) : line;
+      });
+    } else {
+      // Add formatting
+      let counter = 1;
+      newLines = lines.map(line => {
+        if (line.trim() === '') return line;
+        if (isNumbered) return `${counter++}. ${line}`;
+        return `${prefix}${line}`;
+      });
+    }
+    
+    const before = text.substring(0, lineStart);
+    const after = text.substring(selectionEnd);
+    
+    textarea.value = before + newLines.join('\n') + after;
+    textarea.focus();
+    // Adjust selection to cover the modified lines
+    textarea.selectionStart = lineStart;
+    textarea.selectionEnd = lineStart + newLines.join('\n').length;
     textarea.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
   function setupTextEditor() {
     const toolbarContainer = document.querySelector('#editor-tab .text-editor-toolbar');
     const toolbarButtons = toolbarContainer.querySelectorAll('.toolbar-button');
+    const manualMessageTextarea = document.getElementById('manual-message');
+
+    function isCursorInFormattedSpan(text, cursorPosition, tag) {
+      const textBefore = text.substring(0, cursorPosition);
+      const textAfter = text.substring(cursorPosition);
+
+      let lastOpenTagIndex = -1;
+      let searchIndex = textBefore.length;
+      while((searchIndex = textBefore.lastIndexOf(tag, searchIndex - 1)) !== -1) {
+          if (searchIndex === 0 || /\s/.test(text[searchIndex - 1])) {
+              lastOpenTagIndex = searchIndex;
+              break;
+          }
+      }
+      if (lastOpenTagIndex === -1) return false;
+
+      let firstCloseTagIndexInAfter = -1;
+      searchIndex = 0;
+      while((searchIndex = textAfter.indexOf(tag, searchIndex)) !== -1) {
+          const absoluteIndex = cursorPosition + searchIndex;
+          if (absoluteIndex === text.length - 1 || /\s/.test(text[absoluteIndex + 1])) {
+              firstCloseTagIndexInAfter = searchIndex;
+              break;
+          }
+          searchIndex++;
+      }
+      if (firstCloseTagIndexInAfter === -1) return false;
+      
+      const firstCloseTagIndex = cursorPosition + firstCloseTagIndexInAfter;
+
+      const contentBetween = text.substring(lastOpenTagIndex + tag.length, firstCloseTagIndex);
+      if (contentBetween.includes(tag) || contentBetween.includes('\n') || contentBetween.startsWith(' ') || contentBetween.endsWith(' ')) {
+          return false;
+      }
+
+      return true;
+    }
+
+    function updateToolbarState() {
+      const start = manualMessageTextarea.selectionStart;
+      const end = manualMessageTextarea.selectionEnd;
+      const text = manualMessageTextarea.value;
+      
+      const currentLineStart = text.lastIndexOf('\n', start - 1) + 1;
+      const currentLineEnd = text.indexOf('\n', start);
+      const currentLine = text.substring(currentLineStart, currentLineEnd === -1 ? text.length : currentLineEnd);
+
+      // Reset all buttons
+      toolbarButtons.forEach(btn => btn.classList.remove('active'));
+
+      // Check for block formats
+      if (/^>\s/.test(currentLine)) document.querySelector('[data-format="quote"]').classList.add('active');
+      if (/^\*\s/.test(currentLine)) document.querySelector('[data-format="bullet"]').classList.add('active');
+      if (/^[0-9]+\.\s/.test(currentLine)) document.querySelector('[data-format="number"]').classList.add('active');
+
+      // Check for inline formats (only if there's no selection)
+      if (start === end) {
+        if (isCursorInFormattedSpan(text, start, '*')) document.querySelector('[data-format="bold"]').classList.add('active');
+        if (isCursorInFormattedSpan(text, start, '_')) document.querySelector('[data-format="italic"]').classList.add('active');
+        if (isCursorInFormattedSpan(text, start, '~')) document.querySelector('[data-format="strike"]').classList.add('active');
+        if (isCursorInFormattedSpan(text, start, '`')) document.querySelector('[data-format="inline-code"]').classList.add('active');
+      }
+    }
 
     toolbarButtons.forEach(button => {
       button.addEventListener('click', (e) => {
@@ -576,15 +724,79 @@ document.addEventListener('DOMContentLoaded', function() {
         const format = button.dataset.format;
         let openTag, closeTag;
         switch (format) {
-          case 'bold': openTag = '*'; closeTag = '*'; break;
-          case 'italic': openTag = '_'; closeTag = '_'; break;
-          case 'strike': openTag = '~'; closeTag = '~'; break;
-          case 'mono': openTag = '```'; closeTag = '```'; break;
+          case 'bold': openTag = '*'; closeTag = '*'; wrapText(manualMessageTextarea, openTag, closeTag); break;
+          case 'italic': openTag = '_'; closeTag = '_'; wrapText(manualMessageTextarea, openTag, closeTag); break;
+          case 'strike': openTag = '~'; closeTag = '~'; wrapText(manualMessageTextarea, openTag, closeTag); break;
+          case 'inline-code': openTag = '`'; closeTag = '`'; wrapText(manualMessageTextarea, openTag, closeTag); break;
+          case 'bullet': prefixLines(manualMessageTextarea, '* '); break;
+          case 'number': prefixLines(manualMessageTextarea, '', true); break;
+          case 'quote': prefixLines(manualMessageTextarea, '> '); break;
         }
-        if (openTag && closeTag) {
-          wrapText(manualMessageTextarea, openTag, closeTag);
-        }
+        updateToolbarState();
       });
+    });
+
+    manualMessageTextarea.addEventListener('keyup', updateToolbarState);
+    manualMessageTextarea.addEventListener('mouseup', updateToolbarState);
+    manualMessageTextarea.addEventListener('input', updateToolbarState);
+
+    manualMessageTextarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const start = manualMessageTextarea.selectionStart;
+        const end = manualMessageTextarea.selectionEnd;
+        const text = manualMessageTextarea.value;
+        
+        const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+        const lineEnd = text.indexOf('\n', start);
+        const currentLine = text.substring(lineStart, lineEnd === -1 ? text.length : lineEnd);
+
+        let continueList = false;
+        let newContent = '\n';
+
+        // Check for bullet list
+        const bulletMatch = currentLine.match(/^(\s*)\*\s/);
+        if (bulletMatch) {
+          if (currentLine.trim() === '*') {
+            // Empty list item, break out
+            const before = text.substring(0, lineStart);
+            const after = text.substring(lineEnd === -1 ? text.length : lineEnd);
+            manualMessageTextarea.value = before + after;
+            manualMessageTextarea.selectionStart = manualMessageTextarea.selectionEnd = before.length;
+            e.preventDefault();
+            return;
+          }
+          continueList = true;
+          newContent += bulletMatch[1] + '* ';
+        }
+
+        // Check for numbered list
+        const numberMatch = currentLine.match(/^(\s*)([0-9]+)\.\s/);
+        if (numberMatch) {
+          if (currentLine.trim().endsWith('.')) {
+             const num = parseInt(numberMatch[2], 10);
+             if (currentLine.trim() === `${num}.`) {
+                // Empty list item, break out
+                const before = text.substring(0, lineStart);
+                const after = text.substring(lineEnd === -1 ? text.length : lineEnd);
+                manualMessageTextarea.value = before + after;
+                manualMessageTextarea.selectionStart = manualMessageTextarea.selectionEnd = before.length;
+                e.preventDefault();
+                return;
+             }
+          }
+          continueList = true;
+          const currentNumber = parseInt(numberMatch[2], 10);
+          newContent += numberMatch[1] + `${currentNumber + 1}. `;
+        }
+
+        if (continueList) {
+          e.preventDefault();
+          const before = text.substring(0, start);
+          const after = text.substring(end);
+          manualMessageTextarea.value = before + newContent + after;
+          manualMessageTextarea.selectionStart = manualMessageTextarea.selectionEnd = start + newContent.length;
+        }
+      }
     });
   }
 
@@ -606,28 +818,58 @@ document.addEventListener('DOMContentLoaded', function() {
       } else if (currentAttachment.fileType === 'document') {
         const docPreview = document.createElement('div');
         docPreview.className = 'doc-preview';
-
-        // Gunakan ikon Font Awesome
         docPreview.innerHTML = `
-          <div class="doc-preview-icon">
-            <i class="fas fa-file"></i>
-          </div>
+          <div class="doc-preview-icon"><i class="fas fa-file"></i></div>
           <div class="doc-preview-name">${currentAttachment.name}</div>
         `;
-
         attachmentContainer.appendChild(docPreview);
       }
     }
 
-
     // Render text preview
-    text = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    text = text.replace(/\*(.*?)\*/g, '<b>$1</b>');
-    text = text.replace(/_(.*?)_/g, '<i>$1</i>');
-    text = text.replace(/~(.*?)~/g, '<s>$1</s>');
-    text = text.replace(/```(.*?)```/g, '<tt>$1</tt>');
-    text = text.replace(/\n/g, '<br>');
-    textContainer.innerHTML = text;
+    let html = '';
+    let inUl = false;
+    let inOl = false;
+
+    const lines = text.split('\n');
+
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i].replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+      // Handle block elements first
+      if (line.startsWith('```') && line.endsWith('```')) {
+        html += `<pre><code>${line.substring(3, line.length - 3)}</code></pre>`;
+        continue;
+      }
+      if (line.startsWith('&gt; ')) {
+        html += `<blockquote>${line.substring(5)}</blockquote>`;
+        continue;
+      }
+
+      const isUl = line.startsWith('* ');
+      const isOl = /^[0-9]+\. /.test(line);
+
+      if (isUl && !inUl) { html += '<ul>'; inUl = true; }
+      if (!isUl && inUl) { html += '</ul>'; inUl = false; }
+      if (isOl && !inOl) { html += '<ol>'; inOl = true; }
+      if (!isOl && inOl) { html += '</ol>'; inOl = false; }
+
+      if (isUl) line = `<li>${line.substring(2)}</li>`;
+      else if (isOl) line = `<li>${line.substring(line.indexOf('. ') + 2)}</li>`;
+      
+      // Inline elements
+      line = line.replace(/\*(.*?)\*/g, '<b>$1</b>');
+      line = line.replace(/_(.*?)_/g, '<i>$1</i>');
+      line = line.replace(/~(.*?)~/g, '<s>$1</s>');
+      line = line.replace(/`(.*?)`/g, '<code>$1</code>');
+
+      html += line + (i < lines.length -1 && !isUl && !isOl ? '<br>' : '');
+    }
+
+    if (inUl) html += '</ul>';
+    if (inOl) html += '</ol>';
+
+    textContainer.innerHTML = html.replace(/<br><ul>/g, '<ul>').replace(/<br><ol>/g, '<ol>');
   }
 
   function setupEditorTabs() {

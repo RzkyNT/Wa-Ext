@@ -144,6 +144,11 @@
       box-shadow: none;
     }
 
+    .toolbar-button.active {
+      background-color: var(--color-accent);
+      color: var(--color-text-inverse);
+    }
+
     .toolbar-button svg {
       width: 16px;
       height: 16px;
@@ -492,7 +497,10 @@
             <button type="button" class="toolbar-button" data-format="bold" title="Bold"><i class="fas fa-bold"></i></button>
             <button type="button" class="toolbar-button" data-format="italic" title="Italic"><i class="fas fa-italic"></i></button>
             <button type="button" class="toolbar-button" data-format="strike" title="Strikethrough"><i class="fas fa-strikethrough"></i></button>
-            <button type="button" class="toolbar-button" data-format="mono" title="Monospace"><i class="fas fa-code"></i></button>
+            <button type="button" class="toolbar-button" data-format="inline-code" title="Inline Code"><i class="fas fa-terminal"></i></button>
+            <button type="button" class="toolbar-button" data-format="bullet" title="Bulleted List"><i class="fas fa-list-ul"></i></button>
+            <button type="button" class="toolbar-button" data-format="number" title="Numbered List"><i class="fas fa-list-ol"></i></button>
+            <button type="button" class="toolbar-button" data-format="quote" title="Quote"><i class="fas fa-quote-left"></i></button>
           </div>
       <textarea id="manual-message" rows="4"></textarea>
     </div>
