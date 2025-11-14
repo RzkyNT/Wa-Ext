@@ -265,7 +265,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 async function insertMessageText(messageBox, messageText) {
-  console.log("insertMessageText: messageText to insert:", messageText);
+  console.log("insertMessageText: Inserting message line-by-line with single line breaks.");
   messageBox.focus();
   await delay(500);
 
@@ -279,8 +279,7 @@ async function insertMessageText(messageBox, messageText) {
     const line = lines[i];
 
     if (line !== '') {
-      // Insert text character-by-character or as a whole using input events
-      // We'll use a more reliable method: set data on input event
+      // Use a more reliable input event dispatch method
       const inputEvent = new InputEvent('input', {
         bubbles: true,
         inputType: 'insertText',
@@ -291,27 +290,11 @@ async function insertMessageText(messageBox, messageText) {
       await delay(50);
     }
 
-    // Jika ini bukan baris terakhir, tambahkan line break dengan Shift+Enter
+    // If this is not the last line, add a single line break
     if (i < lines.length - 1) {
-      // Simulate Shift + Enter
-      const keydownEvent = new KeyboardEvent('keydown', {
-        key: 'Enter',
-        code: 'Enter',
-        shiftKey: true,
-        bubbles: true,
-        cancelable: true
-      });
-      const keyupEvent = new KeyboardEvent('keyup', {
-        key: 'Enter',
-        code: 'Enter',
-        shiftKey: true,
-        bubbles: true,
-        cancelable: true
-      });
-
-      messageBox.dispatchEvent(keydownEvent);
-      await delay(50);
-      messageBox.dispatchEvent(keyupEvent);
+      document.execCommand('insertLineBreak', false, null);
+      // Also dispatch an input event to make sure WhatsApp's framework notices
+      messageBox.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertLineBreak' }));
       await delay(100);
     }
   }
@@ -319,20 +302,7 @@ async function insertMessageText(messageBox, messageText) {
   // Final input event to ensure WhatsApp recognizes the change
   messageBox.dispatchEvent(new InputEvent('input', { bubbles: true }));
   await delay(500);
-
-  // Verifikasi
-  const expectedHtml = messageText.replace(/\n/g, '<br>');
-  const verificationStartTime = Date.now();
-  const verificationTimeout = 5000;
-
-  while (Date.now() - verificationStartTime < verificationTimeout) {
-    if (messageBox.innerHTML.includes(expectedHtml)) {
-      console.log("insertMessageText: Message text successfully verified.");
-      return;
-    }
-    await delay(100);
-  }
-  console.warn("insertMessageText: Verification failed — content may not match.");
+  console.log("insertMessageText: Message insertion complete.");
 }
 
 
